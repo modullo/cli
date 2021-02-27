@@ -1,0 +1,12 @@
+node_modules/
+build/
+.idea
+.vscode
+src/bin/linux
+src/bin/windows
+heroku-installer
+
+test.js
+test/
+
+.DS_Store
