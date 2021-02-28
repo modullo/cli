@@ -1,37 +1,12 @@
+const { Spinner, ncp, util, access, params } = require("./actions");
 const fs = require("fs");
-const Listr = require("listr");
-const ncp = require("ncp");
 const path = require("path");
-const envfile = require("envfile");
-const util = require("util");
 const chalk = require("chalk");
-const clear = require("clear");
-const figlet = require("figlet");
-const spawn = require("child_process").spawn;
-const CLI = require("clui");
-const Spinner = CLI.Spinner;
-const access = util.promisify(fs.access);
 const copy = util.promisify(ncp);
 const axios = require("axios");
 const mysql = require("mysql");
-const params = require(path.join(__dirname, "./params.js"));
 
-clear();
-console.log(
-  chalk.yellow(
-    figlet.textSync(params.general.title, { horizontalLayout: "full" })
-  )
-);
-
-console.log(
-  "Welcome to the Modullo Framework Installer v" +
-    require(path.join(__dirname, "../../package.json")).version
-);
-console.log(
-  "You can stop this installation process at any time by hitting CTRL + C"
-);
-
-async function createProject(options) {
+async function initInstallation(options) {
   const status = new Spinner("Initializing Installation...");
   await status.start();
 
@@ -106,25 +81,25 @@ async function setupInstallationENV(options) {
     SERVICE_PROXY_IMAGE: params.docker.services.proxy.image,
     SERVICE_RELOADER_NAME: params.docker.services.reloader.name,
     SERVICE_RELOADER_PORT: params.docker.services.reloader.port,
-    SERVICE_CORE_PHP_NAME: params.docker.services.core_php.name,
-    SERVICE_CORE_PHP_PORT: params.docker.services.core_php.port,
-    SERVICE_CORE_PHP_IMAGE: params.docker.services.core_php.image,
-    SERVICE_CORE_PHP_WORKING_DIR: params.docker.services.core_php.working_dir,
-    SERVICE_CORE_PHP_ENV_FILE: params.docker.services.core_php.env_file,
-    SERVICE_CORE_PHP_VOLUMES_ENV: params.docker.services.core_php.volumes_env,
-    SERVICE_CORE_PHP_VOLUMES_PHP_INI:
-      params.docker.services.core_php.volumes_php_ini,
+    SERVICE_CORE_APP_NAME: params.docker.services.core_app.name,
+    SERVICE_CORE_APP_PORT: params.docker.services.core_app.port,
+    SERVICE_CORE_APP_IMAGE: params.docker.services.core_app.image,
+    SERVICE_CORE_APP_WORKING_DIR: params.docker.services.core_app.working_dir,
+    SERVICE_CORE_APP_ENV_FILE: params.docker.services.core_app.env_file,
+    SERVICE_CORE_APP_VOLUMES_ENV: params.docker.services.core_app.volumes_env,
+    SERVICE_CORE_APP_VOLUMES_PHP_INI:
+      params.docker.services.core_app.volumes_php_ini,
     SERVICE_CORE_WEB_SUBDOMAIN: params.docker.services.core_web.subdomain,
     SERVICE_CORE_WEB_NAME: params.docker.services.core_web.name,
     SERVICE_CORE_WEB_PORT: params.docker.services.core_web.port,
-    SERVICE_HUB_PHP_NAME: params.docker.services.hub_php.name,
-    SERVICE_HUB_PHP_PORT: params.docker.services.hub_php.port,
-    SERVICE_HUB_PHP_IMAGE: params.docker.services.hub_php.image,
-    SERVICE_HUB_PHP_WORKING_DIR: params.docker.services.hub_php.working_dir,
-    SERVICE_HUB_PHP_ENV_FILE: params.docker.services.hub_php.env_file,
-    SERVICE_HUB_PHP_VOLUMES_ENV: params.docker.services.hub_php.volumes_env,
-    SERVICE_HUB_PHP_VOLUMES_PHP_INI:
-      params.docker.services.hub_php.volumes_php_ini,
+    SERVICE_HUB_APP_NAME: params.docker.services.hub_app.name,
+    SERVICE_HUB_APP_PORT: params.docker.services.hub_app.port,
+    SERVICE_HUB_APP_IMAGE: params.docker.services.hub_app.image,
+    SERVICE_HUB_APP_WORKING_DIR: params.docker.services.hub_app.working_dir,
+    SERVICE_HUB_APP_ENV_FILE: params.docker.services.hub_app.env_file,
+    SERVICE_HUB_APP_VOLUMES_ENV: params.docker.services.hub_app.volumes_env,
+    SERVICE_HUB_APP_VOLUMES_PHP_INI:
+      params.docker.services.hub_app.volumes_php_ini,
     SERVICE_HUB_WEB_SUBDOMAIN: params.docker.services.hub_web.subdomain,
     SERVICE_HUB_WEB_NAME: params.docker.services.hub_web.name,
     SERVICE_HUB_WEB_PORT: params.docker.services.hub_web.port,
@@ -206,7 +181,10 @@ async function installContainersForCore(options, params) {
 
   await setupCoreENV(options);
 
-  console.log("%s Modullo CORE ENV Setup Complete", chalk.green.bold("Success"));
+  console.log(
+    "%s Modullo CORE ENV Setup Complete",
+    chalk.green.bold("Success")
+  );
 
   try {
     // add `-d`, flag back
@@ -219,7 +197,7 @@ async function installContainersForCore(options, params) {
       `-d`,
       `--build`,
       `${params.docker.services.proxy.name}`,
-      `${params.docker.services.core_php.name}`,
+      `${params.docker.services.core_app.name}`,
       `${params.docker.services.core_web.name}`,
       `${params.docker.services.mysql.name}`,
       `${params.docker.services.redis.name}`,
@@ -325,7 +303,7 @@ async function installContainersForHub(options) {
       `up`,
       `-d`,
       `--build`,
-      `${params.docker.services.hub_php.name}`,
+      `${params.docker.services.hub_app.name}`,
       `${params.docker.services.hub_web.name}`
     ]);
     ls.on("close", async code => {
@@ -699,7 +677,6 @@ async function downloadFiles(options, app) {
   repoDownloadLink = `https://github.com/${repoArray[`git_repo_${app}`] +
     "/tarball/" +
     repoArray[`git_branch_${app}`]}`;
-    
 
   if (repoDownloadLink.length == 0) {
     console.log("%s Invalid repository URL", chalk.red.bold("Error"));
@@ -782,7 +759,7 @@ async function copyFiles(options, app, sourceFolder, destinationFolder) {
   status.start();
   let { spawn, exec } = require("child_process");
   let sourceFile = "";
-  
+
   try {
     let fs = require("fs"),
       path = require("path");
@@ -935,4 +912,4 @@ async function installDNSResolver(options) {
   }
 }
 
-exports.createProject = createProject;
+exports.installModullo = initInstallation;

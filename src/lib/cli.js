@@ -2,7 +2,7 @@ const arg = require("arg");
 const inquirer = require("inquirer");
 const path = require("path");
 const params = require(path.join(__dirname, "./params.js"));
-const main = require(path.join(__dirname, "./main.js"));
+const actions = require(path.join(__dirname, "./actions.js"));
 const inquiries = require(path.join(__dirname, "./inquirer.js"));
 const Listr = require("listr");
 const CLI = require("clui");
@@ -23,7 +23,7 @@ async function cli(args) {
 
     console.log("\n");
 
-    const dorcasRequirements = new Listr([
+    const modulloRequirements = new Listr([
       {
         title: "Node & NPM",
         task: () => {
@@ -230,7 +230,7 @@ async function cli(args) {
       }
     ]);
 
-    await dorcasRequirements
+    await modulloRequirements
       .run()
       .then(result => {
         if (count_checks >= count_requirements) {
@@ -269,10 +269,16 @@ async function cli(args) {
 
   function parseArgumentsIntoOptions(rawArgs) {
     const args = arg(
-      { "--auto": Boolean, "--command_path": String, "--env_path": String },
+      {
+        "--action": String,
+        "--auto": Boolean,
+        "--command_path": String,
+        "--env_path": String
+      },
       { argv: rawArgs.slice(2) }
     );
     return {
+      defaultAction: rawArgs[2] || "help",
       skipInputs: args["--auto"] || false,
       commandPath: args["--command_path"],
       envPath: args["--env_path"]
@@ -287,16 +293,36 @@ async function cli(args) {
         template: options.template || defaultTemplate
       };
     }
-    const answers = await inquirer.prompt(inquiries.inquiries);
 
-    return {
-      ...options,
-      answers,
-      template: answers.template || defaultTemplate
-    };
+    switch (options.defaultAction) {
+      case "install":
+        const answers_install = await inquirer.prompt(
+          inquiries.inquiries_install
+        );
+        return {
+          ...options,
+          answers_install,
+          template: answers.template || defaultTemplate
+        };
+        break;
+
+      case "load":
+        return {
+          ...options,
+          module: args["load"] || "no-module"
+        };
+        break;
+
+      default:
+        return {
+          ...options,
+          template: options.template || defaultTemplate
+        };
+    }
   }
 
-  await main.createProject(options);
+  //process the CLI arguments & options into Modullo Actions
+  await actions.processCLI(options);
 }
 
 exports.cli = cli;

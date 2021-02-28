@@ -1,7 +1,7 @@
 const path = require("path");
 const params = require(path.join(__dirname, "./params.js"));
 
-exports.inquiries = [
+exports.inquiries_install = [
   {
     name: "template",
     type: "list",

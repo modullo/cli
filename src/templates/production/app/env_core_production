@@ -16,14 +16,14 @@ DEPLOY_ENV=docker
 
 
 DB_CONNECTION=mysql
-DB_HOST=dorcas_business_sql
+DB_HOST=dorcas_modullo_sql
 DB_PORT=3306
 DB_DATABASE=dorcas
 DB_USERNAME=root
 DB_PASSWORD=root
 
 
-DB_HUB_HOST=dorcas_business_hub_sql
+DB_HUB_HOST=dorcas_modullo_hub_sql
 DB_HUB_PORT=3306
 DB_HUB_DATABASE=dorcas_hub
 DB_HUB_USERNAME=root
@@ -36,13 +36,13 @@ QUEUE_DRIVER=redis
 
 FILESYSTEM_DRIVER=file
 
-REDIS_HOST=dorcas_business_redis
+REDIS_HOST=dorcas_modullo_redis
 REDIS_PASSWORD=null
 REDIS_PORT=6379
 REDIS_CLIENT=predis
 
 MAIL_DRIVER=smtp
-MAIL_HOST=dorcas_business_smtp
+MAIL_HOST=dorcas_modullo_smtp
 MAIL_PORT=1025
 
 
