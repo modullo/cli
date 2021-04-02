@@ -10,260 +10,22 @@ const Spinner = CLI.Spinner;
 const execa = require("execa");
 const chalk = require("chalk");
 const spawn = require("child_process").spawn;
+const Str = require("@supercharge/strings");
+const installRequirements = require(path.join(
+  __dirname,
+  "./installRequirements.js"
+));
+const deployRequirements = require(path.join(
+  __dirname,
+  "./deployRequirements.js"
+));
+const wordpress = require(path.join(
+  __dirname,
+  "../frameworks/wordpress/Wordpress.js"
+));
+const aws = require(path.join(__dirname, "../platforms/aws/AWS.js"));
 
 async function cli(args) {
-  await checkRequirements();
-
-  async function checkRequirements() {
-    const status = new Spinner("Checking for Requirements...");
-    status.start();
-
-    var count_requirements = 7;
-    var count_checks = 0;
-
-    console.log("\n");
-
-    const modulloRequirements = new Listr([
-      {
-        title: "Node & NPM",
-        task: () => {
-          return new Listr(
-            [
-              {
-                title: "Checking Node",
-                task: (ctx, task) =>
-                  execa("node", ["-v"])
-                    .then(result => {
-                      //command: 'node -v',exitCode: 0,stdout: 'v12.16.1',
-                      //stderr: '', all: undefined, failed: false, timedOut: false, isCanceled: false, killed: false
-                      if (
-                        result.stdout.includes(".") &&
-                        !result.stdout.includes("command not found")
-                      ) {
-                        count_checks++;
-                      } else {
-                        task.skip(
-                          "Node not available, visit https://nodejs.org/ to install"
-                        );
-                        throw new Error(
-                          "NPM not available, visit https://nodejs.org/ to install"
-                        );
-                      }
-                    })
-                    .catch(() => {
-                      ctx.node = false;
-                      task.skip(
-                        "Node not available, visit https://nodejs.org/ to install"
-                      );
-                      throw new Error(
-                        "NPM not available, visit https://nodejs.org/ to install"
-                      );
-                    })
-              },
-              {
-                title: "Checking for NPM",
-                task: (ctx, task) =>
-                  execa("npm", ["-v"])
-                    .then(result => {
-                      if (
-                        result.stdout.includes(".") &&
-                        !result.stdout.includes("command not found")
-                      ) {
-                        count_checks++;
-                      } else {
-                        task.skip(
-                          "Node not available, visit https://nodejs.org/ to install"
-                        );
-                        throw new Error(
-                          "NPM not available, visit https://nodejs.org/ to install"
-                        );
-                      }
-                    })
-                    .catch(() => {
-                      ctx.npm = false;
-                      task.skip(
-                        "NPM not available, visit https://nodejs.org/ to install"
-                      );
-                      throw new Error(
-                        "NPM not available, visit https://nodejs.org/ to install"
-                      );
-                    })
-              }
-            ],
-            { concurrent: false }
-          );
-        }
-      },
-      {
-        title: "Docker",
-        task: () => {
-          return new Listr(
-            [
-              {
-                title: "Checking for Docker",
-                task: (ctx, task) =>
-                  execa("docker", ["-v"])
-                    .then(result => {
-                      if (
-                        result.stdout.includes(".") &&
-                        !result.stdout.includes("command not found")
-                      ) {
-                        count_checks++;
-                      } else {
-                        task.skip(
-                          "Docker not available, https://www.docker.com/get-started to install"
-                        );
-                        throw new Error(
-                          "Docker not available, https://www.docker.com/get-started to install"
-                        );
-                      }
-                    })
-                    .catch(() => {
-                      ctx.docker = false;
-                      task.skip(
-                        "Docker not available, https://www.docker.com/get-started to install"
-                      );
-                      throw new Error(
-                        "Docker not available, https://www.docker.com/get-started to install"
-                      );
-                    })
-              },
-              {
-                title: "Checking for Docker Compose",
-                task: (ctx, task) =>
-                  execa("docker-compose", ["-v"])
-                    .then(result => {
-                      if (
-                        result.stdout.includes(".") &&
-                        !result.stdout.includes("command not found")
-                      ) {
-                        count_checks++;
-                      } else {
-                        task.skip(
-                          "Docker not available, https://www.docker.com/get-started to install"
-                        );
-                        throw new Error(
-                          "Docker not available, https://www.docker.com/get-started to install"
-                        );
-                      }
-                    })
-                    .catch(() => {
-                      ctx.docker_compose = false;
-                      task.skip(
-                        "Docker not available, https://www.docker.com/get-started to install"
-                      );
-                      throw new Error(
-                        "Docker not available, https://www.docker.com/get-started to install"
-                      );
-                    })
-              }
-            ],
-            { concurrent: false }
-          );
-        }
-      },
-      {
-        title: "Utilities",
-        task: () => {
-          return new Listr(
-            [
-              {
-                title: "Checking for UnZip",
-                task: (ctx, task) =>
-                  execa("unzip", ["-v"])
-                    .then(result => {
-                      if (
-                        result.stdout.includes("by Info-ZIP") &&
-                        !result.stdout.includes("command not found")
-                      ) {
-                        count_checks++;
-                      } else {
-                        task.skip("UnZip not available");
-                        throw new Error("UnZip not available");
-                      }
-                    })
-                    .catch(() => {
-                      ctx.unzip = false;
-                      task.skip("UnZip not available");
-                      throw new Error("UnZip not available");
-                    })
-              },
-              {
-                title: "Checking for cURL",
-                task: (ctx, task) =>
-                  execa("curl", ["--version"])
-                    .then(result => {
-                      if (
-                        result.stdout.includes(".") &&
-                        !result.stdout.includes("command not found")
-                      ) {
-                        count_checks++;
-                      } else {
-                        task.skip("cURL not available");
-                        throw new Error("cURL not available");
-                      }
-                    })
-                    .catch(() => {
-                      ctx.curl = false;
-                      task.skip("cURL not available");
-                      throw new Error("cURL not available");
-                    })
-              },
-              {
-                title: "Checking for cp (copy utility)",
-                task: (ctx, task) =>
-                  execa("cp", ["-v"]).catch(status => {
-                    //console.log(status)
-                    if (status.exitCode == "64") {
-                      count_checks++;
-                    } else {
-                      ctx.curl = false;
-                      task.skip("cp (copy utility) not available");
-                      throw new Error("cp (copy utility) not available");
-                    }
-                  })
-              }
-            ],
-            { concurrent: false }
-          );
-        }
-      }
-    ]);
-
-    await modulloRequirements
-      .run()
-      .then(result => {
-        if (count_checks >= count_requirements) {
-          console.log("\n");
-          console.log(
-            `%s All ${count_checks} of ${count_requirements} Installation Requirement(s) passed`,
-            chalk.green.bold("Success")
-          );
-          console.log("\n");
-
-          status.stop();
-        } else {
-          console.log("\n");
-          console.log(
-            `%s ${count_checks} of ${count_requirements} Installation Requirement(s) passed. All must be met to proceed`,
-            chalk.yellow.bold("Warning")
-          );
-          console.log("\n");
-
-          process.exit(1);
-        }
-      })
-      .catch(err => {
-        console.log("\n");
-        console.error(
-          "%s Installation Requirements failed: " + err,
-          chalk.red.bold("Error")
-        );
-        console.log("\n");
-        process.exit(1);
-      });
-  }
-
   let options = parseArgumentsIntoOptions(args);
   options = await promptForMissingOptions(options);
 
@@ -273,7 +35,18 @@ async function cli(args) {
         "--action": String,
         "--auto": Boolean,
         "--command_path": String,
-        "--env_path": String
+        "--env_path": String,
+        "--debug": Boolean,
+        "--arguments": Boolean,
+        "--interactive": Boolean,
+        "--template": String,
+        "--email": String,
+        "--agreement": String,
+        "--platform": String,
+        "--framework": String,
+        "--premium": Boolean,
+        "--aws-access-key": String,
+        "--aws-secret-key": String
       },
       { argv: rawArgs.slice(2) }
     );
@@ -281,28 +54,173 @@ async function cli(args) {
       defaultAction: rawArgs[2] || "help",
       skipInputs: args["--auto"] || false,
       commandPath: args["--command_path"],
-      envPath: args["--env_path"]
+      envPath: args["--env_path"],
+      installInteractive: args["--interactive"] || false,
+      installArguments: args["--arguments"] || true,
+      defaultAction: rawArgs[2] || "help",
+      debugMode: args["--debug"] || false,
+      databasePassword: Str.random(18),
+      argTemplate: args["--template"] || "production",
+      argEmail: args["--email"],
+      argAgreeementTOS: args["--agreement"],
+      installFramework: args["--framework"] || "modullo",
+      deployPlatform: args["--platform"] || "local",
+      deployPremium: args["--premium"] || false,
+      deployAWSAccessKey: args["--aws-access-key"] || "",
+      deployAWSSecretKey: args["--aws-secret-key"] || ""
     };
   }
 
   async function promptForMissingOptions(options) {
     const defaultTemplate = "production";
-    if (options.skipInputs) {
-      return {
-        ...options,
-        template: options.template || defaultTemplate
-      };
-    }
+    // if (options.skipInputs) {
+    //   return {
+    //     ...options,
+    //     template: options.template || defaultTemplate
+    //   };
+    // }
 
     switch (options.defaultAction) {
+      case "create":
+        if (
+          !["modullo", "wordpress"].includes(options.installFramework) ||
+          !["local", "aws"].includes(options.deployPlatform)
+        ) {
+          console.error(
+            "%s Please specify a valid framework and platform to proceed!",
+            chalk.red.bold("CLI: ")
+          );
+          console.log(
+            `You can run something like ${chalk.gray.italic.bold(
+              "modullo create --framework modullo --platform local"
+            )} to setup Modullo on your local system OR ${chalk.gray.italic.bold(
+              "modullo create --framework wordpress --platform aws"
+            )} to setup the Wordpress on your AWS environment\n`
+          );
+          process.exit(1);
+        }
+
+        console.log(
+          `\n` +
+            `Setting up ${chalk.gray.bold(
+              options.installFramework.toUpperCase()
+            )} on ${chalk.gray.italic.bold(
+              options.deployPlatform.toUpperCase()
+            )} ...`
+        );
+
+        await installRequirements.installRequirements(); // require standard Modullo CLI requirements
+
+        if (options.deployPlatform == "aws") {
+          let optionsUpdated = aws.cliRequirements(options);
+          //console.log(optionsUpdated);
+          //console.log(options)
+          let req = aws.deployRequirements(); // extract specific AWS Deployment requirements
+          await deployRequirements.init("aws", req[0], req[1]);
+          return optionsUpdated;
+        }
+
+        break;
       case "install":
-        const answers_install = await inquirer.prompt(
+        if (
+          options.installPlatform ||
+          !["wordpress"].includes(options.installPlatform)
+        ) {
+          console.error(
+            "%s Please specify a valid framework or platform to install!",
+            chalk.red.bold("CLI: ")
+          );
+          console.log(
+            `You can run something like ${chalk.gray.italic.bold(
+              "modullo install --platform wordpress"
+            )} OR ${chalk.gray.italic.bold(
+              "dorcas install --community"
+            )} to setup the Modullo framework\n`
+          );
+          process.exit(1);
+        }
+
+        if (options.installPlatform) {
+          await installRequirements.installRequirements();
+
+          if (options.installInteractive) {
+            const answers = await inquirer.prompt(inquiries.business_inquiries);
+            return {
+              ...options,
+              answers,
+              template: answers.template || defaultTemplate
+            };
+          }
+          if (options.installArguments) {
+            //lets parse command line arguments
+            let optionsArguments = [];
+            let missingArguments = {};
+
+            if (
+              !options.argTemplate ||
+              !["production", "development"].includes(options.argTemplate)
+            ) {
+              missingArguments["template"] =
+                "Template must be either 'production' or 'development'";
+            } else {
+              optionsArguments["template"] = options.argTemplate;
+            }
+            if (
+              !options.argEmail ||
+              !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(
+                options.argEmail
+              )
+            ) {
+              missingArguments["email"] = "Please enter a valid login Email";
+            } else {
+              optionsArguments["email"] = options.argEmail;
+            }
+            if (
+              !options.argAgreeementTOS ||
+              !["yes", "no"].includes(options.argAgreeementTOS)
+            ) {
+              missingArguments["agreement"] =
+                "You need to agree (or disagree) with Terms/Conditions of Use and Privacy Policy available at https://dorcas.io/agreement. Enter 'yes' or 'no'";
+            } else {
+              optionsArguments["agreement"] = options.argAgreeementTOS;
+            }
+
+            //console.log(missingArguments);
+            //console.log(optionsArguments);
+
+            if (_.size(missingArguments) > 0) {
+              console.error(
+                "%s The following argument(s) is/are required but either missing OR in the wrong format: ",
+                chalk.red.bold("Error")
+              );
+              Object.keys(missingArguments).forEach(element => {
+                console.log(
+                  `- ${chalk.red.bold(element)}: ${chalk.italic(
+                    missingArguments[element]
+                  )}`
+                );
+              });
+              console.log("\n");
+              process.exit(1);
+            }
+
+            let answers = optionsArguments;
+
+            return {
+              ...options,
+              answers,
+              template: optionsArguments.template || defaultTemplate
+            };
+          }
+        }
+
+        const install_answers = await inquirer.prompt(
           inquiries.inquiries_install
         );
         return {
           ...options,
-          answers_install,
-          template: answers.template || defaultTemplate
+          install_answers,
+          template: install_answers.template || defaultTemplate
         };
         break;
 

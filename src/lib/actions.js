@@ -17,7 +17,19 @@ const access = util.promisify(fs.access);
 exports.access = access;
 const params = require(path.join(__dirname, "./params.js"));
 exports.params = params;
+const Str = require("@supercharge/strings");
+exports.Str = Str;
+var _ = require("lodash/core");
 const { installModullo } = require("./installModullo");
+// const deployRequirements = require(path.join(
+//   __dirname,
+//   "./deployRequirements.js"
+// ));
+const aws = require(path.join(__dirname, "../platforms/aws/AWS.js"));
+const wordpress = require(path.join(
+  __dirname,
+  "../frameworks/wordpress/Wordpress.js"
+));
 
 clear();
 console.log(
@@ -47,7 +59,37 @@ function installerHelp() {
 }
 
 async function initModullo(options) {
+  // console.log("init")
+  // console.log(options)
   switch (options.defaultAction) {
+    case "create":
+      // const fullPathName = __dirname + "/main.js";
+      // const templateDir = path.resolve(
+      //   fullPathName.substr(fullPathName.indexOf("/")),
+      //   "../../templates",
+      //   options.template.toLowerCase()
+      // );
+      // options.templateDirectory = templateDir;
+
+      // options = {
+      //   ...options,
+      //   targetDirectory:
+      //     process.cwd() +
+      //     `/` +
+      //     params.general.deploy_output_folder +
+      //     `-deploy-` +
+      //     (options.deployPlatform || "none")
+      // };
+
+      if (options.deployPlatform == "aws") {
+        await aws.configInit(options, "ecs"); //configure AWS environment
+      }
+      if (options.installFramework == "wordpress") {
+        options = await wordpress.cliRequirements(options); // require specific Wordpress CLI requirements
+        wordpress.createInit(options);
+      }
+
+      break;
     case "install":
       installModullo.installModullo(options);
       break;
@@ -57,6 +99,9 @@ async function initModullo(options) {
       } else {
         //installModulloModule.installModulloModule(options);
       }
+      break;
+    case "help":
+      cmdHelp();
       break;
     default:
       installerHelp();

@@ -1,5 +1,5 @@
 {
-  "name": "@modullo/installer",
+  "name": "@modullo/cli",
   "version": "1.0.0",
   "description": "Modullo Installer",
   "main": "src/bin/modullo.js",
@@ -11,8 +11,7 @@
   },
   "keywords": [
     "modullo",
-    "installer",
-    "CLI"
+    "cli"
   ],
   "contributors": [
     "Bolaji Olawoye",
@@ -20,6 +19,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@supercharge/strings": "^1.18.0",
     "arg": "^4.1.3",
     "axios": "^0.21.0",
     "chalk": "^3.0.0",
