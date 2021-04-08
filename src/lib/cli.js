@@ -11,19 +11,21 @@ const execa = require("execa");
 const chalk = require("chalk");
 const spawn = require("child_process").spawn;
 const Str = require("@supercharge/strings");
+var _ = require("lodash/core");
 const installRequirements = require(path.join(
   __dirname,
   "./installRequirements.js"
 ));
-const deployRequirements = require(path.join(
+const platformRequirements = require(path.join(
   __dirname,
-  "./deployRequirements.js"
+  "./platformRequirements.js"
 ));
-const wordpress = require(path.join(
+const frameworkRequirements = require(path.join(
   __dirname,
-  "../frameworks/wordpress/Wordpress.js"
+  "./frameworkRequirements.js"
 ));
-const aws = require(path.join(__dirname, "../platforms/aws/AWS.js"));
+//const wordpress = require(path.join( __dirname, "../frameworks/wordpress/Wordpress.js" ));
+//const aws = require(path.join(__dirname, "../platforms/aws/AWS.js"));
 
 async function cli(args) {
   let options = parseArgumentsIntoOptions(args);
@@ -45,12 +47,17 @@ async function cli(args) {
         "--platform": String,
         "--framework": String,
         "--premium": Boolean,
+        "--app": String,
+        "--keypair": String,
         "--aws-access-key": String,
-        "--aws-secret-key": String
+        "--aws-secret-key": String,
+        "--aws-region": String
       },
       { argv: rawArgs.slice(2) }
     );
     return {
+      missingArguments: {},
+      answers: [],
       defaultAction: rawArgs[2] || "help",
       skipInputs: args["--auto"] || false,
       commandPath: args["--command_path"],
@@ -66,8 +73,13 @@ async function cli(args) {
       installFramework: args["--framework"] || "modullo",
       deployPlatform: args["--platform"] || "local",
       deployPremium: args["--premium"] || false,
+      appName: args["--app"] || "",
+      deployKeyPair: args["--keypair"] || "none",
       deployAWSAccessKey: args["--aws-access-key"] || "",
-      deployAWSSecretKey: args["--aws-secret-key"] || ""
+      deployAWSSecretKey: args["--aws-secret-key"] || "",
+      deployAWSRegion: args["--aws-region"] || "",
+      deployAWSInstanceType: args["--aws-instance-type"] || "t2.micro",
+      deployAWSInstanceSize: args["--aws-instance-size"] || 1
     };
   }
 
@@ -80,47 +92,32 @@ async function cli(args) {
     //   };
     // }
 
+    //let optionsArguments = [];
+    //options.missingArguments = {};
+
+    if (
+      !options.argEmail ||
+      !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(
+        options.argEmail
+      )
+    ) {
+      options.missingArguments["email"] = "Please enter a valid login Email";
+    } else {
+      options.answers["email"] = options.argEmail;
+    }
+    if (
+      !options.argAgreeementTOS ||
+      !["yes", "no"].includes(options.argAgreeementTOS)
+    ) {
+      options.missingArguments["agreement"] =
+        "You need to agree (or disagree) with Terms/Conditions of Use and Privacy Policy available at https://modullo.io/agreement. Enter 'yes' or 'no'";
+    } else {
+      options.answers["agreement"] = options.argAgreeementTOS;
+    }
+
+    //let answers = optionsArguments;
+
     switch (options.defaultAction) {
-      case "create":
-        if (
-          !["modullo", "wordpress"].includes(options.installFramework) ||
-          !["local", "aws"].includes(options.deployPlatform)
-        ) {
-          console.error(
-            "%s Please specify a valid framework and platform to proceed!",
-            chalk.red.bold("CLI: ")
-          );
-          console.log(
-            `You can run something like ${chalk.gray.italic.bold(
-              "modullo create --framework modullo --platform local"
-            )} to setup Modullo on your local system OR ${chalk.gray.italic.bold(
-              "modullo create --framework wordpress --platform aws"
-            )} to setup the Wordpress on your AWS environment\n`
-          );
-          process.exit(1);
-        }
-
-        console.log(
-          `\n` +
-            `Setting up ${chalk.gray.bold(
-              options.installFramework.toUpperCase()
-            )} on ${chalk.gray.italic.bold(
-              options.deployPlatform.toUpperCase()
-            )} ...`
-        );
-
-        await installRequirements.installRequirements(); // require standard Modullo CLI requirements
-
-        if (options.deployPlatform == "aws") {
-          let optionsUpdated = aws.cliRequirements(options);
-          //console.log(optionsUpdated);
-          //console.log(options)
-          let req = aws.deployRequirements(); // extract specific AWS Deployment requirements
-          await deployRequirements.init("aws", req[0], req[1]);
-          return optionsUpdated;
-        }
-
-        break;
       case "install":
         if (
           options.installPlatform ||
@@ -154,13 +151,13 @@ async function cli(args) {
           if (options.installArguments) {
             //lets parse command line arguments
             let optionsArguments = [];
-            let missingArguments = {};
+            //let missingArguments = {};
 
             if (
               !options.argTemplate ||
               !["production", "development"].includes(options.argTemplate)
             ) {
-              missingArguments["template"] =
+              options.missingArguments["template"] =
                 "Template must be either 'production' or 'development'";
             } else {
               optionsArguments["template"] = options.argTemplate;
@@ -171,7 +168,8 @@ async function cli(args) {
                 options.argEmail
               )
             ) {
-              missingArguments["email"] = "Please enter a valid login Email";
+              options.missingArguments["email"] =
+                "Please enter a valid login Email";
             } else {
               optionsArguments["email"] = options.argEmail;
             }
@@ -179,7 +177,7 @@ async function cli(args) {
               !options.argAgreeementTOS ||
               !["yes", "no"].includes(options.argAgreeementTOS)
             ) {
-              missingArguments["agreement"] =
+              options.missingArguments["agreement"] =
                 "You need to agree (or disagree) with Terms/Conditions of Use and Privacy Policy available at https://dorcas.io/agreement. Enter 'yes' or 'no'";
             } else {
               optionsArguments["agreement"] = options.argAgreeementTOS;
@@ -224,6 +222,86 @@ async function cli(args) {
         };
         break;
 
+      case "create":
+        if (
+          !["modullo", "wordpress"].includes(options.installFramework) ||
+          !["local", "aws"].includes(options.deployPlatform)
+        ) {
+          console.error(
+            "%s Please specify a valid framework and platform to proceed!",
+            chalk.red.bold("CLI: ")
+          );
+          console.log(
+            `You can run something like ${chalk.gray.italic.bold(
+              "modullo create --framework modullo --platform local"
+            )} to setup Modullo on your local system OR ${chalk.gray.italic.bold(
+              "modullo create --framework wordpress --platform aws"
+            )} to setup the Wordpress on your AWS environment\n`
+          );
+          process.exit(1);
+        }
+
+        console.log(
+          `\n` +
+            `Setting up ${chalk.gray.bold(
+              options.installFramework.toUpperCase()
+            )} on ${chalk.gray.italic.bold(
+              options.deployPlatform.toUpperCase()
+            )} ...`
+        );
+
+        await installRequirements.installRequirements(); // require standard Modullo CLI requirements
+
+        // require platform requirements
+        options = await platformRequirements.checkRequirements(options);
+
+        // require framework requirements
+        options = await frameworkRequirements.checkRequirements(options);
+
+        break;
+
+      case "pipeline":
+        if (
+          !["modullo", "wordpress"].includes(options.installFramework) ||
+          !["aws"].includes(options.deployPlatform)
+        ) {
+          console.error(
+            "%s Please specify a valid framework and platform to proceed!",
+            chalk.red.bold("CLI: ")
+          );
+          console.log(
+            `You can run something like ${chalk.gray.italic.bold(
+              "modullo pipeline --framework modullo --platform aws"
+            )} to setup a Pipeline for Wordpress on your AWS environment\n`
+          );
+          process.exit(1);
+        }
+
+        console.log(
+          `\n` +
+            `Setting up a Pipeline for ${chalk.gray.bold(
+              options.installFramework.toUpperCase()
+            )} on ${chalk.gray.italic.bold(
+              options.deployPlatform.toUpperCase()
+            )} ...`
+        );
+
+        await installRequirements.installRequirements(); // require standard Modullo CLI requirements
+
+        // require platform requirements
+        options = await platformRequirements.checkRequirements(
+          options,
+          "pipeline"
+        );
+
+        // require framework requirements
+        options = await frameworkRequirements.checkRequirements(
+          options,
+          "pipeline"
+        );
+
+        break;
+
       case "load":
         return {
           ...options,
@@ -237,6 +315,29 @@ async function cli(args) {
           template: options.template || defaultTemplate
         };
     }
+
+    if (_.size(options.missingArguments) > 0) {
+      console.error(
+        "%s The following argument(s) is/are required but either missing OR in the wrong format: ",
+        chalk.red.bold("Error")
+      );
+      Object.keys(options.missingArguments).forEach(element => {
+        console.log(
+          `- ${chalk.red.bold(element)}: ${chalk.italic(
+            options.missingArguments[element]
+          )}`
+        );
+      });
+      console.log("\n");
+      process.exit(1);
+    }
+
+    return options;
+
+    // return {
+    //   ...options,
+    //   answers
+    // };
   }
 
   //process the CLI arguments & options into Modullo Actions

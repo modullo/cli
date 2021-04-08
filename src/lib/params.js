@@ -5,6 +5,8 @@ var params = {
     title: "Modullo",
     title_full: "Modullo Framework",
     install_output_folder: "modullo-app",
+    deploy_output_folder: "modullo-app",
+    create_output_folder: "modullo-create",
     http_scheme: "http",
     host: "127.0.0.1",
     port: 20030,

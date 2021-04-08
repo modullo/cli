@@ -20,6 +20,7 @@ exports.params = params;
 const Str = require("@supercharge/strings");
 exports.Str = Str;
 var _ = require("lodash/core");
+const utilities = require(path.join(__dirname, "./utilities.js"));
 const { installModullo } = require("./installModullo");
 // const deployRequirements = require(path.join(
 //   __dirname,
@@ -62,37 +63,82 @@ async function initModullo(options) {
   // console.log("init")
   // console.log(options)
   switch (options.defaultAction) {
-    case "create":
-      // const fullPathName = __dirname + "/main.js";
-      // const templateDir = path.resolve(
-      //   fullPathName.substr(fullPathName.indexOf("/")),
-      //   "../../templates",
-      //   options.template.toLowerCase()
-      // );
-      // options.templateDirectory = templateDir;
-
-      // options = {
-      //   ...options,
-      //   targetDirectory:
-      //     process.cwd() +
-      //     `/` +
-      //     params.general.deploy_output_folder +
-      //     `-deploy-` +
-      //     (options.deployPlatform || "none")
-      // };
-
-      if (options.deployPlatform == "aws") {
-        await aws.configInit(options, "ecs"); //configure AWS environment
-      }
-      if (options.installFramework == "wordpress") {
-        options = await wordpress.cliRequirements(options); // require specific Wordpress CLI requirements
-        wordpress.createInit(options);
-      }
-
-      break;
     case "install":
       installModullo.installModullo(options);
       break;
+
+    case "create":
+      options.template = "create";
+
+      const fullPathName = __dirname + "/main.js";
+      const templateDir = path.resolve(
+        fullPathName.substr(fullPathName.indexOf("/")),
+        "../../templates",
+        options.template.toLowerCase()
+      );
+      options.templateDirectory = templateDir;
+
+      options = {
+        ...options,
+        targetDirectory:
+          process.cwd() +
+          `/` +
+          params.general.deploy_output_folder +
+          `-${options.installFramework}-${options.deployPlatform}`
+      };
+
+      await utilities.installTemplateFiles(options);
+
+      console.log(
+        "%s " +
+          options.template.toUpperCase() +
+          " Version Template Files Installed",
+        chalk.green.bold("Success")
+      );
+
+      if (options.installFramework == "wordpress") {
+        //options = await wordpress.cliRequirements(options); // require specific Wordpress CLI requirements
+        wordpress.createInit(options, "ecs");
+      }
+
+      break;
+
+    case "pipeline":
+      options.template = "pipeline";
+
+      const fullPathName = __dirname + "/main.js";
+      const templateDir = path.resolve(
+        fullPathName.substr(fullPathName.indexOf("/")),
+        "../../templates",
+        options.template.toLowerCase()
+      );
+      options.templateDirectory = templateDir;
+
+      options = {
+        ...options,
+        targetDirectory:
+          process.cwd() +
+          `/` +
+          params.general.deploy_output_folder +
+          `-${options.installFramework}-${options.deployPlatform}`
+      };
+
+      await utilities.installTemplateFiles(options);
+
+      console.log(
+        "%s " +
+          options.template.toUpperCase() +
+          " Version Template Files Installed",
+        chalk.green.bold("Success")
+      );
+
+      if (options.installFramework == "wordpress") {
+        //options = await wordpress.cliRequirements(options); // require specific Wordpress CLI requirements
+        wordpress.createInit(options, "ecs");
+      }
+
+      break;
+
     case "load":
       if (options.module == "no-module") {
         console.log("%s No Module Specified", chalk.blue.bold("Modullo LOAD:"));

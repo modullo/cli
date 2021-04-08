@@ -3,8 +3,8 @@ const path = require("path");
 const Listr = require("listr");
 const execa = require("execa");
 const chalk = require("chalk");
-const clear = require("clear");
-const figlet = require("figlet");
+//const clear = require("clear");
+//const figlet = require("figlet");
 const spawn = require("child_process").spawn;
 const { Spinner, ncp, util, access, params, Str } = require(path.join(
   __dirname,
@@ -13,77 +13,58 @@ const { Spinner, ncp, util, access, params, Str } = require(path.join(
 var _ = require("lodash/core");
 const inquirer = require("inquirer");
 const inquiries = require(path.join(__dirname, "./inquirer.js"));
+const utilities = require(path.join(__dirname, "../../lib/utilities.js"));
 
 async function cliRequirements(options) {
   if (options.installInteractive) {
+    console.log("int a");
     const answers = await inquirer.prompt(inquiries.inquiries_aws);
-    return {
-      ...options,
-      answers
-    };
+    options.answers = answers;
+    console.log(options);
+    return options;
   }
   if (options.installArguments) {
-    //lets parse command line arguments
-    let optionsArguments = [];
-    let missingArguments = {};
-
-    if (
-      !options.argEmail ||
-      !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(
-        options.argEmail
-      )
-    ) {
-      missingArguments["email"] = "Please enter a valid login Email";
-    } else {
-      optionsArguments["email"] = options.argEmail;
-    }
-    if (
-      !options.argAgreeementTOS ||
-      !["yes", "no"].includes(options.argAgreeementTOS)
-    ) {
-      missingArguments["agreement"] =
-        "You need to agree (or disagree) with Terms/Conditions of Use and Privacy Policy available at https://modullo.io/agreement. Enter 'yes' or 'no'";
-    } else {
-      optionsArguments["agreement"] = options.argAgreeementTOS;
-    }
-
     if (options.deployAWSAccessKey == "") {
-      missingArguments["aws-access-key"] = "Please enter your AWS Access Key";
+      options.missingArguments["aws-access-key"] =
+        "Please enter your AWS Access Key";
     } else {
-      optionsArguments["aws-access-key"] = options.deployAWSAccessKey;
+      options.answers["aws-access-key"] = options.deployAWSAccessKey;
     }
 
     if (options.deployAWSSecretKey == "") {
-      missingArguments["aws-secret-key"] = "Please enter your AWS Secret Key";
+      options.missingArguments["aws-secret-key"] =
+        "Please enter your AWS Secret Key";
     } else {
-      optionsArguments["aws-secret-key"] = options.deployAWSSecretKey;
+      options.answers["aws-secret-key"] = options.deployAWSSecretKey;
     }
 
-    //console.log(missingArguments);
-    //console.log(optionsArguments);
-
-    if (_.size(missingArguments) > 0) {
-      console.error(
-        "%s The following argument(s) is/are required but either missing OR in the wrong format: ",
-        chalk.red.bold("Error")
-      );
-      Object.keys(missingArguments).forEach(element => {
-        console.log(
-          `- ${chalk.red.bold(element)}: ${chalk.italic(
-            missingArguments[element]
-          )}`
-        );
-      });
-      console.log("\n");
-      process.exit(1);
+    if (!["us-west-1", "eu-west-1"].includes(options.deployAWSRegion)) {
+      options.missingArguments["aws-region"] = "Please enter your AWS Region";
+    } else {
+      options.answers["aws-region"] = options.deployAWSRegion;
     }
 
-    let answers = optionsArguments;
+    if (options.deployAWSInstanceType == "") {
+      options.missingArguments["aws-instance-type"] =
+        "Please enter your AWS Instance Type";
+    } else {
+      options.answers["aws-instance-type"] = options.deployAWSInstanceType;
+    }
 
-    return {
-      ...options,
-      answers
-    };
+    if (options.deployAWSInstanceSize == "") {
+      options.missingArguments["aws-instance-size"] =
+        "Please enter your AWS Instance Size";
+    } else {
+      options.answers["aws-instance-size"] = options.deployAWSInstanceSize;
+    }
+
+    if (options.deployKeyPair == "") {
+      options.missingArguments["keypair"] = "Please enter your KeyPair";
+    } else {
+      options.answers["keypair"] = options.deployKeyPair;
+    }
+
+    return options;
   }
 }
 
@@ -150,61 +131,11 @@ function deployRequirements(options) {
 exports.deployRequirements = deployRequirements;
 
 async function configInit(options, platform) {
-  console.log("aws");
-  console.log(options);
   const status = new Spinner(
     `Initializing AWS ${platform.toUpperCase()} Deployment...`
   );
   status.start();
-
-  if (platform == "ecs") {
-    console.log(`%s Configuring ECS`, chalk.green.bold("AWS: "));
-
-    status.stop();
-
-    try {
-      //ecs-cli configure profile --profile-name wordpress --access-key $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY
-      let configureECSCommands = `ecs-cli configure`;
-      configureECSCommands += ` profile --profile-name modullo-wordpress`;
-      configureECSCommands += ` --access-key ${options.answers["aws-access-key"]} --secret-key ${options.answers["aws-secret-key"]}`;
-
-      if (options.debugMode) {
-        console.log(
-          `%s Spawning ` + `${configureECSCommands} ... \n`,
-          chalk.yellow.bold("DEBUG: ")
-        );
-      }
-
-      let ls = await spawn(configureECSCommands, { shell: true });
-
-      ls.stdout.on("data", async data => {
-        console.log(`%s ${data}`, chalk.magenta.bold("Output: "));
-
-        if (data.includes("Logged in as")) {
-          await createDorcasApp(options);
-        }
-      });
-
-      ls.stderr.on("data", async data => {
-        console.log(`%s ${data}`, chalk.magenta.bold("Input: "));
-        process.stdin.pipe(ls.stdin);
-        if (data.includes("quit")) {
-          process.exit(1);
-        }
-      });
-      ls.on("close", async code => {
-        if (code === 0) {
-          console.log("%s Configure successful", chalk.green.bold("AWS: "));
-        }
-      });
-      ls.on("error", async error => {
-        console.log(`%s ${error.message}`, chalk.green.bold("Error: "));
-      });
-    } catch (err) {
-      console.log("%s Configure error: " + err, chalk.red.bold("AWS: "));
-      //await status.stop();
-    }
-  }
+  status.stop();
 }
 
 exports.configInit = configInit;
