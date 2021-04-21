@@ -11,6 +11,10 @@ var _ = require("lodash/core");
 
 const aws = require(path.join(__dirname, "../platforms/aws/AWS.js"));
 
+const azure = require(path.join(__dirname, "../platforms/azure/Azure.js"));
+
+const local = require(path.join(__dirname, "../platforms/local/Local.js"));
+
 async function deployRequirements(
   platform,
   additionalRequirements,
@@ -123,10 +127,22 @@ async function deployRequirements(
 exports.deployRequirements = deployRequirements;
 
 async function checkRequirements(options, service = "") {
+  if (options.deployPlatform == "local") {
+    //we may want to add  new requirements for local in future or extract some of standard ones and not  require  them of everyone
+    return options;
+  }
+
   if (options.deployPlatform == "aws") {
     let optionsPlatform = await aws.cliRequirements(options);
-    let req = aws.deployRequirements(); // extract specific AWS Deployment requirements
+    let req = aws.deployRequirements(options, service); // extract specific AWS Deployment requirements
     await deployRequirements("aws", req[0], req[1]);
+    return optionsPlatform;
+  }
+
+  if (options.deployPlatform == "azure") {
+    let optionsPlatform = await azure.cliRequirements(options);
+    let req = azure.deployRequirements(options, service); // extract specific Azure Deployment requirements
+    await deployRequirements("azure", req[0], req[1]);
     return optionsPlatform;
   }
 }

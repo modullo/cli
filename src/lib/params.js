@@ -7,16 +7,34 @@ var params = {
     install_output_folder: "modullo-app",
     deploy_output_folder: "modullo-app",
     create_output_folder: "modullo-create",
+    pipeline_output_folder: "modullo-pipeline",
     http_scheme: "http",
     host: "127.0.0.1",
     port: 20030,
     path_core_oauth_setup: "setup",
     path_core_user_register: "register",
     path_hub_admin_login: "login",
-    default_domain: "modullo-demo.test"
+    default_domain_production: "modullo-prod.test",
+    default_domain_development: "modullo-dev.test"
   },
   versions: {
     production: {
+      services: [
+        "proxy",
+        "core_app",
+        "core_web",
+        "hub_app",
+        "hub_web",
+        "mysql",
+        "redis",
+        "smtp"
+      ],
+      git_repo_core: "modullo/core",
+      git_branch_core: "dev",
+      git_repo_hub: "modullo/hub",
+      git_branch_hub: "dev"
+    },
+    development: {
       services: [
         "proxy",
         "core_app",

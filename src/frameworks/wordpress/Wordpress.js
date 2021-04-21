@@ -17,19 +17,16 @@ const utilities = require(path.join(__dirname, "../../lib/utilities.js"));
 
 async function cliRequirements(options) {
   if (options.installInteractive) {
-    console.log("int w");
     const answers = await inquirer.prompt(inquiries.inquiries_wordpress);
     options.answers = answers;
-
-    console.log(options);
     return options;
   }
   if (options.installArguments) {
     //lets parse command line arguments
     if (options.appName == "") {
-      options.missingArguments["app_name"] = "Please provide an App Name";
+      options.missingArguments["app"] = "Please provide an App Name";
     } else {
-      options.answers["app_name"] = options.appName;
+      options.answers["app"] = options.appName;
     }
 
     return options;
@@ -38,14 +35,14 @@ async function cliRequirements(options) {
 
 exports.cliRequirements = cliRequirements;
 
-async function createInit(options, platform) {
+async function createInit(options, platform, service = "") {
   const status = new Spinner(
     `Creating Wordpress Application on ${platform.toUpperCase()}...`
   );
   await status.start();
 
   if (platform == "ecs") {
-    // await aws.configInit(options, "ecs"); //configure AWS environment
+    //await aws.configInit(options, "ecs", service); //configure AWS environment
     //console.log(`%s Configuring ECS`, chalk.green.bold("AWS: "));
 
     try {
@@ -196,7 +193,7 @@ async function createInit(options, platform) {
         console.log(`%s ${error.message}`, chalk.green.bold("Error: "));
       });
     } catch (err) {
-      console.log("%s Configure error: " + err, chalk.red.bold("AWS: "));
+      console.log("%s Configure error: " + err, chalk.red.bold("Error: "));
       await status.stop();
     }
   }
@@ -205,3 +202,28 @@ async function createInit(options, platform) {
 }
 
 exports.createInit = createInit;
+
+async function createPipeline(options, platform, service = "") {
+  const status = new Spinner(
+    `Creating Pipeline for Wordpress Application on ${platform.toUpperCase()}...`
+  );
+  await status.start();
+  if (options.deployPlatform == "aws" && platform == "cdk") {
+    await aws.configInit(options, platform, service); //configure AWS CDK environment
+  }
+
+  if (platform == "cdk") {
+    let createCDKAppCommannds = `cd ${options.targetDirectory}`;
+    createCDKAppCommannds += ` `;
+
+    await utilities.cliSpawn(
+      options,
+      createCDKAppCommannds,
+      "AWS CDK",
+      "CDK App Creation Successful",
+      "CDK App Creation Error"
+    );
+  }
+}
+
+exports.createPipeline = createPipeline;

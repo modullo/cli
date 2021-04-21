@@ -1,0 +1,149 @@
+version: "3"
+
+services:
+  modullo_proxy:
+    container_name: "${SERVICE_PROXY_NAME}"
+    image: ${SERVICE_PROXY_IMAGE}
+    ports:
+      - "${SERVICE_PROXY_PORT}:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - dorcas
+
+  modullo_core_app:
+    container_name: "${SERVICE_CORE_APP_NAME}"
+    image: "${SERVICE_CORE_APP_IMAGE}"
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: "${SERVICE_CORE_APP_NAME}"
+      SERVICE_TAGS: dev
+    working_dir: "${SERVICE_CORE_APP_WORKING_DIR}"
+    env_file: "${SERVICE_CORE_APP_ENV_FILE}"
+    volumes:
+      - "${SERVICE_CORE_APP_VOLUMES_ENV}"
+      - "${SERVICE_CORE_APP_VOLUMES_PHP_INI}"
+      #- ${PWD}/web/cors_settings.conf:/etc/nginx/cors_settings.conf
+    depends_on:
+      - modullo_mysql
+      - modullo_redis
+      - modullo_smtp
+    networks:
+      - dorcas
+
+  modullo_core_web:
+    container_name: "${SERVICE_CORE_WEB_NAME}"
+    build:
+      context: ./nginx/core
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "${SERVICE_CORE_WEB_PORT}:80"
+    #volumes:
+    #- ${PWD}/web/cors_settings.conf:/etc/nginx/cors_settings.conf
+    depends_on:
+      - modullo_core_app
+    networks:
+      - dorcas
+    environment:
+      - VIRTUAL_HOST=${SERVICE_CORE_WEB_SUBDOMAIN}.${HOST_DOMAIN}
+      - SERVICE_CORE_APP_NAME=${SERVICE_CORE_APP_NAME}
+
+  modullo_hub_app:
+    container_name: "${SERVICE_HUB_APP_NAME}"
+    image: "${SERVICE_HUB_APP_IMAGE}"
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: "${SERVICE_HUB_APP_NAME}"
+      SERVICE_TAGS: production
+    working_dir: "${SERVICE_HUB_APP_WORKING_DIR}"
+    env_file: "${SERVICE_HUB_APP_ENV_FILE}"
+    volumes:
+      - "${SERVICE_HUB_APP_VOLUMES_ENV}"
+      - "${SERVICE_HUB_APP_VOLUMES_PHP_INI}"
+      #- ${PWD}/web/cors_settings.conf:/etc/nginx/cors_settings.conf
+    #command: "composer install"
+    depends_on:
+      - modullo_mysql
+      - modullo_redis
+    # - dorcas_modullo_smtp
+    # command: "php artisan storage:link"
+    networks:
+      - dorcas
+
+  modullo_hub_web:
+    container_name: "${SERVICE_HUB_WEB_NAME}"
+    build:
+      context: ./nginx/hub
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "${SERVICE_HUB_WEB_PORT}:80"
+    #volumes:
+    #- ${PWD}/web/cors_settings.conf:/etc/nginx/cors_settings.conf
+    depends_on:
+      - modullo_hub_app
+      - modullo_core_web
+    networks:
+      - dorcas
+    environment:
+      - VIRTUAL_HOST=${HOST_DOMAIN},store.${HOST_DOMAIN},blog.${HOST_DOMAIN}
+      - SERVICE_HUB_APP_NAME=${SERVICE_HUB_APP_NAME}
+
+  modullo_mysql:
+    container_name: "${SERVICE_MYSQL_NAME}"
+    build:
+      context: ./mysql/
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    # tty: true
+    ports:
+      - "${SERVICE_MYSQL_PORT}:3306"
+    volumes:
+      - modullo_databases:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${SERVICE_MYSQL_PASSWORD}
+      - VIRTUAL_HOST=mysql.dorcashub.test
+      - SERVICE_NAME=modullo_mysql
+    networks:
+      - dorcas
+
+  modullo_redis:
+    container_name: "${SERVICE_REDIS_NAME}"
+    image: "${SERVICE_REDIS_IMAGE}"
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "${SERVICE_REDIS_PORT}:6379"
+    volumes:
+      - modullo_caches:/data
+    networks:
+      - dorcas
+    environment:
+      - VIRTUAL_HOST=redis.dorcashub.test
+
+  modullo_smtp:
+    container_name: "${SERVICE_SMTP_NAME}"
+    image: "${SERVICE_SMTP_IMAGE}"
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "${SERVICE_SMTP_PORT}:1025"
+      - "${SERVICE_SMTP_PORT_2}:8025"
+    networks:
+      - dorcas
+    environment:
+      - VIRTUAL_HOST=smtp.dorcashub.test
+
+volumes:
+  modullo_databases:
+    driver: local
+  modullo_caches:
+    driver: local
+
+networks:
+  dorcas:
+    name: modullo
+    driver: bridge

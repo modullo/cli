@@ -1,16 +1,16 @@
 const path = require("path");
 const params = require(path.join(__dirname, "../../lib/params.js"));
 
-exports.inquiries_wordpress = [
+exports.inquiries_containerRegistry = [
   {
-    name: "app",
+    name: "registry-name",
     type: "input",
-    message: "Please enter your App Name",
+    message: "Please provide a Registry Name",
     validate: function(value) {
       if (value.length) {
         return true;
       } else {
-        return "Required! Please enter your App Name";
+        return "Required! Please provide a Registry Name";
       }
     }
   }

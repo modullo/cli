@@ -56,44 +56,44 @@ async function setupInstallationENV(options) {
       params.docker.services.reloader.port + options.port_increment,
     SERVICE_RELOADER_IMAGE: params.docker.services.reloader.image,
     SERVICE_CORE_PHP_NAME:
-      params.docker.services.core_php.name + options.container_name_addon,
+      params.docker.services.core_app.name + options.container_name_addon,
     SERVICE_CORE_PHP_PORT:
-      params.docker.services.core_php.port + options.port_increment,
-    SERVICE_CORE_PHP_IMAGE: params.docker.services.core_php.image,
-    SERVICE_CORE_PHP_WORKING_DIR: params.docker.services.core_php.working_dir,
+      params.docker.services.core_app.port + options.port_increment,
+    SERVICE_CORE_PHP_IMAGE: params.docker.services.core_app.image,
+    SERVICE_CORE_PHP_WORKING_DIR: params.docker.services.core_app.working_dir,
     SERVICE_CORE_PHP_ENV_FILE:
-      params.docker.services.core_php.env_file + options.template.toLowerCase(),
+      params.docker.services.core_app.env_file + options.template.toLowerCase(),
     SERVICE_CORE_PHP_VOLUMES_ENV:
-      params.docker.services.core_php.env_file +
+      params.docker.services.core_app.env_file +
       options.template.toLowerCase() +
       ":" +
-      params.docker.services.core_php.volumes_env,
+      params.docker.services.core_app.volumes_env,
     SERVICE_CORE_PHP_VOLUMES_PHP_INI:
-      params.docker.services.core_php.volumes_php_ini,
-    SERVICE_CORE_PHP_SRC_DIR: params.docker.services.core_php.src_dir,
-    SERVICE_CORE_PHP_APP_DIR: params.docker.services.core_php.app_dir,
+      params.docker.services.core_app.volumes_php_ini,
+    SERVICE_CORE_PHP_SRC_DIR: params.docker.services.core_app.src_dir,
+    SERVICE_CORE_PHP_APP_DIR: params.docker.services.core_app.app_dir,
     SERVICE_CORE_WEB_SUBDOMAIN: params.docker.services.core_web.subdomain,
     SERVICE_CORE_WEB_NAME:
       params.docker.services.core_web.name + options.container_name_addon,
     SERVICE_CORE_WEB_PORT:
       params.docker.services.core_web.port + options.port_increment,
     SERVICE_HUB_PHP_NAME:
-      params.docker.services.hub_php.name + options.container_name_addon,
+      params.docker.services.hub_app.name + options.container_name_addon,
     SERVICE_HUB_PHP_PORT:
-      params.docker.services.hub_php.port + options.port_increment,
-    SERVICE_HUB_PHP_IMAGE: params.docker.services.hub_php.image,
-    SERVICE_HUB_PHP_WORKING_DIR: params.docker.services.hub_php.working_dir,
+      params.docker.services.hub_app.port + options.port_increment,
+    SERVICE_HUB_PHP_IMAGE: params.docker.services.hub_app.image,
+    SERVICE_HUB_PHP_WORKING_DIR: params.docker.services.hub_app.working_dir,
     SERVICE_HUB_PHP_ENV_FILE:
-      params.docker.services.hub_php.env_file + options.template.toLowerCase(),
+      params.docker.services.hub_app.env_file + options.template.toLowerCase(),
     SERVICE_HUB_PHP_VOLUMES_ENV:
-      params.docker.services.hub_php.env_file +
+      params.docker.services.hub_app.env_file +
       options.template.toLowerCase() +
       ":" +
-      params.docker.services.hub_php.volumes_env,
+      params.docker.services.hub_app.volumes_env,
     SERVICE_HUB_PHP_VOLUMES_PHP_INI:
-      params.docker.services.hub_php.volumes_php_ini,
-    SERVICE_HUB_PHP_SRC_DIR: params.docker.services.hub_php.src_dir,
-    SERVICE_HUB_PHP_APP_DIR: params.docker.services.hub_php.app_dir,
+      params.docker.services.hub_app.volumes_php_ini,
+    SERVICE_HUB_PHP_SRC_DIR: params.docker.services.hub_app.src_dir,
+    SERVICE_HUB_PHP_APP_DIR: params.docker.services.hub_app.app_dir,
     SERVICE_HUB_WEB_SUBDOMAIN: params.docker.services.hub_web.subdomain,
     SERVICE_HUB_WEB_NAME:
       params.docker.services.hub_web.name + options.container_name_addon,
@@ -155,7 +155,11 @@ async function downloadFiles(options, app) {
 
   let repoDownloadLink = "";
 
-  let repoArray = params.versions[template];
+  let git_template = ["production", "development"].includes(template)
+    ? template
+    : "production";
+
+  let repoArray = params.versions[git_template];
 
   repoDownloadLink = `https://github.com/${repoArray[`git_repo_${app}`] +
     "/tarball/" +
@@ -360,7 +364,7 @@ async function cleanupFiles(options, app, cleanupFolder, destinationFolder) {
         } else if (app == "hub" && options.template.toLowerCase() != "deploy") {
           await installContainerServices(options);
         } else if (options.template.toLowerCase() == "deploy") {
-          heroku.deployDorcasApp(options, app, destinationFolder);
+          //deploy IAAS/PAAS
         }
       }
     });
@@ -1178,4 +1182,474 @@ async function createUser(body, options) {
   });
   return res.data.data;
 }
-//reg 174 & 148
+
+async function cliSpawn(
+  options,
+  command,
+  callerID,
+  messageSuccess,
+  messageError
+) {
+  try {
+    let spawnCommand = command;
+
+    if (options.debugMode) {
+      console.log(
+        `%s Spawning ` + `${spawnCommand} ... \n`,
+        chalk.yellow.bold("DEBUG: ")
+      );
+    }
+
+    let ls = await spawn(spawnCommand, { shell: true });
+
+    ls.stdout.on("data", async data => {
+      console.log(`%s ${data}`, chalk.magenta.bold("Output: "));
+      if (data.includes("level=error") || data.includes("level=fatal")) {
+        console.log(
+          `%s ${messageError}: ` + data,
+          chalk.red.bold(`${callerID}: `)
+        );
+        process.exit(1);
+      }
+    });
+
+    ls.stderr.on("data", async data => {
+      console.log(`%s ${data}`, chalk.magenta.bold("Input: "));
+      process.stdin.pipe(ls.stdin);
+    });
+    ls.on("close", async code => {
+      if (code === 0) {
+        console.log(`%s ${messageSuccess}`, chalk.green.bold(`${callerID}: `));
+      }
+    });
+    ls.on("error", async error => {
+      console.log(`%s ${error.message}`, chalk.green.bold("Error: "));
+    });
+  } catch (err) {
+    console.log(`%s ${messageError}: ` + err, chalk.red.bold(`${callerID}: `));
+  }
+}
+
+exports.cliSpawn = cliSpawn;
+
+async function cliSpawnCallback(
+  options,
+  command,
+  callerID,
+  messageSuccess,
+  messageError,
+  callback,
+  returnOutput = false,
+  returnOnString = ""
+) {
+  try {
+    let spawnCommand = command;
+
+    if (options.debugMode) {
+      console.log(
+        `%s Spawning ` + `${spawnCommand} ... \n`,
+        chalk.yellow.bold("DEBUG: ")
+      );
+    }
+
+    let callbackData = "";
+
+    let ls = await spawn(spawnCommand, { shell: true });
+
+    ls.stdout.on("data", async data => {
+      console.log(`%s ${data}`, chalk.magenta.bold("Output: "));
+      if (data.includes("level=error") || data.includes("level=fatal")) {
+        console.log(
+          `%s ${messageError}: ` + data,
+          chalk.red.bold(`${callerID}: `)
+        );
+        //process.exit(1);
+        callback(false);
+      }
+      if (returnOutput && data.includes(returnOnString)) {
+        callbackData = data;
+        callback(true, callbackData);
+      }
+    });
+
+    ls.stderr.on("data", async data => {
+      console.log(`%s ${data}`, chalk.magenta.bold("Input: "));
+      process.stdin.pipe(ls.stdin);
+      if (returnOutput && data.includes(returnOnString)) {
+        callbackData = data;
+        callback(true, callbackData);
+      }
+    });
+    ls.on("close", async code => {
+      if (code === 0) {
+        console.log(`%s ${messageSuccess}`, chalk.green.bold(`${callerID}: `));
+        callback(true, callbackData);
+      }
+    });
+    ls.on("error", async error => {
+      console.log(`%s ${error.message}`, chalk.green.bold("Error: "));
+    });
+  } catch (err) {
+    console.log(`%s ${messageError}: ` + err, chalk.red.bold(`${callerID}: `));
+  }
+}
+
+exports.cliSpawnCallback = cliSpawnCallback;
+
+async function installContainerServices(options) {
+  let status = new Spinner(
+    "Removing any existing Docker Container Services..."
+  );
+  status.start();
+
+  try {
+    let spawnCommand = `docker-compose --env-file ${
+      options.targetDirectory
+    }/.env.${options.template.toLowerCase()} -f ${
+      options.targetDirectory
+    }/docker-compose.yml down -v --remove-orphans`;
+
+    if (options.debugMode) {
+      console.log(
+        `%s Spawning ` + `${spawnCommand} ... \n`,
+        chalk.yellow.bold("DEBUG: ")
+      );
+    }
+
+    ls.on("close", async code => {
+      status.stop();
+
+      if (code === 0) {
+        console.log(
+          "%s All Docker Container Services Removed",
+          chalk.green.bold("Success")
+        );
+
+        await installContainersForCore(options, params);
+      }
+    });
+  } catch (err) {
+    console.log(
+      "%s Error Removing Docker Container Services:" + err,
+      chalk.red.bold("Error")
+    );
+    await status.stop();
+  } finally {
+  }
+}
+
+async function installContainersForCore(options, params) {
+  const status = new Spinner("Installing Containers for Dorcas CORE");
+  status.start();
+
+  await setupCoreENV(options);
+
+  try {
+    let dockerComposeArgs = [];
+
+    if (options.template.toLowerCase() == "production") {
+      dockerComposeArgs = [
+        `--env-file`,
+        `${options.targetDirectory +
+          `/.env.` +
+          options.template.toLowerCase()}`,
+        `-f`,
+        `${options.targetDirectory + `/docker-compose.yml`}`,
+        `up`,
+        `-d`,
+        `--build`,
+        `${params.docker.services.proxy.name + options.container_name_addon}`,
+        `${params.docker.services.core_php.name +
+          options.container_name_addon}`,
+        `${params.docker.services.core_web.name +
+          options.container_name_addon}`,
+        `${params.docker.services.mysql.name + options.container_name_addon}`,
+        `${params.docker.services.redis.name + options.container_name_addon}`,
+        `${params.docker.services.smtp.name + options.container_name_addon}`
+      ];
+    } else if (options.template.toLowerCase() == "development") {
+      //`--build` - necessary  for dev hot reloading?
+      dockerComposeArgs = [
+        `--env-file`,
+        `${options.targetDirectory +
+          `/.env.` +
+          options.template.toLowerCase()}`,
+        `-f`,
+        `${options.targetDirectory + `/docker-compose.yml`}`,
+        `-f`,
+        `${options.targetDirectory + `/docker-compose-reloader-core.yml`}`,
+        `up`,
+        `-d`,
+        `--build`,
+        `${params.docker.services.proxy.name + options.container_name_addon}`,
+        `${params.docker.services.core_php.name +
+          options.container_name_addon}`,
+        `${params.docker.services.core_web.name +
+          options.container_name_addon}`,
+        `${params.docker.services.mysql.name + options.container_name_addon}`,
+        `${params.docker.services.redis.name + options.container_name_addon}`,
+        `${params.docker.services.smtp.name + options.container_name_addon}`,
+        `${params.docker.services.reloader.name +
+          options.container_name_addon +
+          `_core`}`
+      ];
+    }
+
+    if (options.debugMode == "yes") {
+      console.log("DEBUG: Spawning docker-compose for CORE: ");
+      console.log(dockerComposeArgs);
+    }
+
+    const ls = spawn("docker-compose", dockerComposeArgs);
+
+    ls.on("close", async code => {
+      await status.stop();
+      if (code === 0) {
+        console.log(
+          "%s Dorcas CORE Installation Complete",
+          chalk.green.bold("Success")
+        );
+        await initializeContainersForHub(options);
+      } else {
+        console.log(
+          "%s Dorcas CORE Installation Code: " + code,
+          chalk.red.bold("Error")
+        );
+        process.exit(1);
+      }
+    });
+  } catch (err) {
+    console.log(
+      "%s Dorcas CORE Installation Error: " + err,
+      chalk.red.bold("Error")
+    );
+    status.stop();
+  } finally {
+  }
+}
+
+async function initializeContainersForHub(options) {
+  const status = new Spinner("Initializing Dorcas HUB Installation...");
+  status.start();
+
+  const tasks = new Listr(
+    [
+      {
+        title: "Dorcas HUB Installation",
+        task: () => installContainersForHub(options)
+      }
+    ],
+    { exitOnError: false }
+  );
+
+  try {
+    await checkDatabaseConnectionCORE(options, async function(result) {
+      if (result) {
+        await checkOAuthTablesCORE(options, async function(result) {
+          if (result) {
+            setTimeout(async () => {
+              let res = await setupDorcasCoreOAuth(options);
+              options.clientId = res.client_id;
+              options.clientSecret = res.client_secret;
+              if (typeof options.clientId !== "undefined") {
+                console.log(
+                  "%s Dorcas CORE OAuth Set",
+                  chalk.green.bold("Success")
+                );
+                await setupHubENV(options);
+                await status.stop();
+                console.log(
+                  "%s Dorcas HUB ENV Set",
+                  chalk.green.bold("Success")
+                );
+                await tasks.run();
+              }
+            }, 7500);
+          } else {
+            setTimeout(async () => {
+              console.log("Creating CORE OAuth Entries...");
+              await status.stop();
+              await initializeContainersForHub(options);
+            }, 7500);
+          }
+        });
+      } else {
+        setTimeout(async () => {
+          console.log("retrying connection...");
+          await status.stop();
+          await initializeContainersForHub(options);
+        }, 7500);
+      }
+    });
+  } catch (e) {
+    await status.stop();
+  } finally {
+  }
+}
+
+async function installContainersForHub(options) {
+  const status = new Spinner("Installing Containers for Dorcas HUB");
+  status.start();
+
+  try {
+    let dockerComposeArgs = [];
+
+    if (options.template.toLowerCase() == "production") {
+      dockerComposeArgs = [
+        `--env-file`,
+        `${options.targetDirectory +
+          `/.env.` +
+          options.template.toLowerCase()}`,
+        `-f`,
+        `${options.targetDirectory + `/docker-compose.yml`}`,
+        `up`,
+        `-d`,
+        `--build`,
+        `${params.docker.services.hub_php.name + options.container_name_addon}`,
+        `${params.docker.services.hub_web.name + options.container_name_addon}`
+      ];
+    } else if (options.template.toLowerCase() == "development") {
+      dockerComposeArgs = [
+        `--env-file`,
+        `${options.targetDirectory +
+          `/.env.` +
+          options.template.toLowerCase()}`,
+        `-f`,
+        `${options.targetDirectory + `/docker-compose.yml`}`,
+        `-f`,
+        `${options.targetDirectory + `/docker-compose-reloader-hub.yml`}`,
+        `up`,
+        `-d`,
+        `--build`,
+        `${params.docker.services.hub_php.name + options.container_name_addon}`,
+        `${params.docker.services.hub_web.name + options.container_name_addon}`,
+        `${params.docker.services.reloader.name +
+          options.container_name_addon +
+          `_hub`}`
+      ];
+    }
+    if (options.debugMode == "yes") {
+      console.log("DEBUG: Spawning docker-compose for HUB: ");
+      console.log(dockerComposeArgs);
+    }
+
+    const ls = spawn("docker-compose", dockerComposeArgs);
+    ls.on("close", async code => {
+      await status.stop();
+      if (code === 0) {
+        console.log(
+          "%s Dorcas HUB Installation Complete",
+          chalk.green.bold("Success")
+        );
+        await installDNSResolver(options);
+      } else {
+        console.log(
+          "%s Dorcas Hub Installation Code: " + code,
+          chalk.red.bold("Error")
+        );
+        process.exit(1);
+      }
+    });
+  } catch (err) {
+    console.log("%s Dorcas HUB Installation Error!", chalk.red.bold("Error"));
+    await status.stop();
+  } finally {
+  }
+}
+
+async function checkDatabaseConnectionCORE(options, callback) {
+  let connection_string = {
+    host: params.docker.services.mysql.host,
+    user: params.docker.services.mysql.user,
+    password: options.databasePassword,
+    port: params.docker.services.mysql.port + options.port_increment,
+    database: params.docker.services.mysql.db_core
+  };
+
+  const connection = mysql.createConnection(connection_string);
+
+  if (options.debugMode) {
+    console.log("DEBUG: Core DB Connection String: ");
+    console.log(connection_string);
+  }
+
+  const status = new Spinner("Connecting to Database...");
+  status.start();
+  connection.connect(async function(err) {
+    if (err) {
+      callback(false);
+      console.log("%s Database Connection Failed", chalk.red.bold("error"));
+      connection.end();
+      await status.stop();
+    } else {
+      await status.stop();
+      console.log(
+        "%s Database Connection Established",
+        chalk.green.bold("success")
+      );
+      connection.end();
+      callback(true);
+    }
+  });
+}
+
+async function checkOAuthTablesCORE(options, callback) {
+  let connection_string = {
+    host: params.docker.services.mysql.host,
+    user: params.docker.services.mysql.user,
+    password: options.databasePassword,
+    port: params.docker.services.mysql.port + options.port_increment,
+    database: params.docker.services.mysql.db_core
+  };
+  const connection = mysql.createConnection(connection_string);
+
+  if (options.debugMode == "yes") {
+    console.log("DEBUG: OAuth DB Connection String: ");
+    console.log(connection_string);
+  }
+
+  const status = new Spinner("Connecting to Database...");
+  status.start();
+  connection.query("SELECT * FROM oauth_clients", async function(
+    err,
+    result,
+    fields
+  ) {
+    if (err) {
+      console.log("%s Still Initializing Tables", chalk.red.bold("error"));
+      await status.stop();
+      connection.end();
+      callback(false);
+    } else {
+      console.log(
+        "%s OAuth Connection Instantiated",
+        chalk.green.bold("success")
+      );
+      await status.stop();
+      connection.end();
+      callback(true);
+    }
+  });
+}
+
+async function setupDorcasCoreOAuth(options) {
+  let setup_url =
+    params.general.http_scheme +
+    "://" +
+    params.general.host +
+    ":" +
+    (params.docker.services.core_web.port + options.port_increment) +
+    "/" +
+    params.general.path_core_oauth_setup;
+
+  if (options.debugMode) {
+    console.log("DEBUG: OAuth Setup URL: ");
+    console.log(setup_url);
+  }
+
+  let res = await axios.post(setup_url).catch(err => {
+    console.log("Error setting up CORE OAuth: " + chalk.red.bold(`${err}`));
+    process.exit(1);
+  });
+  return res.data;
+}

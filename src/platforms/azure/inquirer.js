@@ -1,7 +1,7 @@
 const path = require("path");
 const params = require(path.join(__dirname, "../../lib/params.js"));
 
-exports.inquiries_aws = [
+exports.inquiries_azure = [
   {
     name: "aws-account-id",
     type: "input",

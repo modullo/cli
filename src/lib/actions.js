@@ -22,14 +22,18 @@ exports.Str = Str;
 var _ = require("lodash/core");
 const utilities = require(path.join(__dirname, "./utilities.js"));
 const { installModullo } = require("./installModullo");
-// const deployRequirements = require(path.join(
-//   __dirname,
-//   "./deployRequirements.js"
-// ));
 const aws = require(path.join(__dirname, "../platforms/aws/AWS.js"));
 const wordpress = require(path.join(
   __dirname,
   "../frameworks/wordpress/Wordpress.js"
+));
+const modullo = require(path.join(
+  __dirname,
+  "../frameworks/modullo/Modullo.js"
+));
+const containerRegistry = require(path.join(
+  __dirname,
+  "../iaas/container-registry/containerRegistry.js"
 ));
 
 clear();
@@ -59,82 +63,57 @@ function installerHelp() {
   );
 }
 
-async function initModullo(options) {
-  // console.log("init")
-  // console.log(options)
+async function initModulloCLI(options) {
+  const fullPathName = __dirname + "/main.js";
+  const templateDir = path.resolve(
+    fullPathName.substr(fullPathName.indexOf("/")),
+    "../../templates",
+    options.template.toLowerCase()
+  );
+  options.templateDirectory = templateDir;
+
+  await utilities.installTemplateFiles(options);
+
+  console.log(
+    "%s " +
+      options.template.toUpperCase() +
+      " Version Template Files Installed",
+    chalk.green.bold("Success")
+  );
+
+  options.port_increment =
+    options.template.toLowerCase() == "production" ? 0 : 1000; //separate production & development ports
+
+  options.container_name_addon =
+    options.template.toLowerCase() == "production" ? "" : "_development"; //separate production & development ports
+
   switch (options.defaultAction) {
     case "install":
       installModullo.installModullo(options);
       break;
 
     case "create":
-      options.template = "create";
+      switch (options.installFramework) {
+        case "modullo":
+          modullo.createInit(options, "");
+          break;
 
-      const fullPathName = __dirname + "/main.js";
-      const templateDir = path.resolve(
-        fullPathName.substr(fullPathName.indexOf("/")),
-        "../../templates",
-        options.template.toLowerCase()
-      );
-      options.templateDirectory = templateDir;
+        case "wordpress":
+          wordpress.createInit(options, "ecs");
+          break;
+      }
 
-      options = {
-        ...options,
-        targetDirectory:
-          process.cwd() +
-          `/` +
-          params.general.deploy_output_folder +
-          `-${options.installFramework}-${options.deployPlatform}`
-      };
-
-      await utilities.installTemplateFiles(options);
-
-      console.log(
-        "%s " +
-          options.template.toUpperCase() +
-          " Version Template Files Installed",
-        chalk.green.bold("Success")
-      );
-
-      if (options.installFramework == "wordpress") {
-        //options = await wordpress.cliRequirements(options); // require specific Wordpress CLI requirements
-        wordpress.createInit(options, "ecs");
+      switch (options.createInfrastructure) {
+        case "container-registry":
+          containerRegistry.createInit(options, "");
+          break;
       }
 
       break;
 
     case "pipeline":
-      options.template = "pipeline";
-
-      const fullPathName = __dirname + "/main.js";
-      const templateDir = path.resolve(
-        fullPathName.substr(fullPathName.indexOf("/")),
-        "../../templates",
-        options.template.toLowerCase()
-      );
-      options.templateDirectory = templateDir;
-
-      options = {
-        ...options,
-        targetDirectory:
-          process.cwd() +
-          `/` +
-          params.general.deploy_output_folder +
-          `-${options.installFramework}-${options.deployPlatform}`
-      };
-
-      await utilities.installTemplateFiles(options);
-
-      console.log(
-        "%s " +
-          options.template.toUpperCase() +
-          " Version Template Files Installed",
-        chalk.green.bold("Success")
-      );
-
       if (options.installFramework == "wordpress") {
-        //options = await wordpress.cliRequirements(options); // require specific Wordpress CLI requirements
-        wordpress.createInit(options, "ecs");
+        wordpress.createPipeline(options, "cdk", "pipeline");
       }
 
       break;
@@ -147,11 +126,11 @@ async function initModullo(options) {
       }
       break;
     case "help":
-      cmdHelp();
+      installerHelp();
       break;
     default:
       installerHelp();
   }
 }
 
-exports.processCLI = initModullo;
+exports.initModulloCLI = initModulloCLI;
