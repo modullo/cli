@@ -98,7 +98,6 @@ async function cli(args) {
         deployAWSInstanceSize: args["--aws-instance-size"] || 1,
         argFirstname: args["--firstname"],
         argLastname: args["--lastname"],
-        argEmail: args["--email"],
         argPassword: args["--password"],
         argFeatures: args["--features"] || "all",
         argDomain: args["--domain"],
@@ -155,7 +154,9 @@ async function cli(args) {
     // Validate framework, infrastructure and platform choice
     if (
       (!["modullo", "wordpress"].includes(options.installFramework) &&
-        !["container-registry"].includes(options.createInfrastructure)) ||
+        !["container-registry", "pipeline"].includes(
+          options.createInfrastructure
+        )) ||
       !["local", "aws", "azure"].includes(options.deployPlatform)
     ) {
       console.error(

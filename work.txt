@@ -1,4 +1,0 @@
-modullo create --framework wordpress --platform aws --email ifeoluwa.olawoye@gmail.com --agreement yes --aws-access-key AKIAS75A2ZYDCT67AB73 --aws-secret-key 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 --keypair HostVilleDefault --aws-region eu-west-1 --debug
-
-
-modullo create --framework wordpress --platform aws --email ifeoluwa.olawoye@gmail.com --agreement yes --aws-access-key AKIA5ZZQ6TLDLNF223HW --aws-secret-key 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 --keypair EOSDefault --aws-region eu-west-1 --debug --app EOS
