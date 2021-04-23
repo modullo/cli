@@ -1296,6 +1296,104 @@ async function cliSpawnCallback(
 
 exports.cliSpawnCallback = cliSpawnCallback;
 
+async function cliSpawnCommand(
+  options,
+  command,
+  callerID,
+  successRequest,
+  errorRequest,
+  callback
+) {
+  try {
+    let spawnCommand = command;
+
+    if (options.debugMode) {
+      console.log(
+        `%s Spawning ` + `${spawnCommand} ... \n`,
+        chalk.yellow.bold("DEBUG: ")
+      );
+    }
+
+    let callbackDone = false;
+
+    let callbackData = "";
+
+    let ls = await spawn(spawnCommand, { shell: true });
+
+    ls.stdout.on("data", async data => {
+      console.log(`%s ${data}`, chalk.magenta.bold("Output: "));
+
+      for (var i = 0; i < successRequest.catchStrings.length; i++) {
+        if (data.includes(successRequest.catchStrings[i])) {
+          if (successRequest.catch) {
+            callbackData = data;
+            callbackDone = true;
+            callback(true, callbackData);
+          }
+        }
+      }
+
+      for (var i = 0; i < errorRequest.catchStrings.length; i++) {
+        if (data.includes(errorRequest.catchStrings[i])) {
+          console.log(
+            `%s ${errorRequest.message}: ` + data,
+            chalk.red.bold(`${callerID}: `)
+          );
+          callbackData = data;
+          callback(false, callbackData);
+        }
+      }
+    });
+
+    ls.stderr.on("data", async data => {
+      console.log(`%s ${data}`, chalk.magenta.bold("Input: "));
+      process.stdin.pipe(ls.stdin);
+
+      for (var i = 0; i < successRequest.catchStrings.length; i++) {
+        if (data.includes(successRequest.catchStrings[i])) {
+          if (successRequest.catch) {
+            callbackData = data;
+            callbackDone = true;
+            callback(true, callbackData);
+          }
+        }
+      }
+
+      for (var i = 0; i < errorRequest.catchStrings.length; i++) {
+        if (data.includes(errorRequest.catchStrings[i])) {
+          console.log(
+            `%s ${errorRequest.message}: ` + data,
+            chalk.red.bold(`${callerID}: `)
+          );
+          callbackData = data;
+          callback(false, callbackData);
+        }
+      }
+    });
+    ls.on("close", async code => {
+      if (code === 0) {
+        console.log(
+          `%s ${successRequest.message}`,
+          chalk.green.bold(`${callerID}: `)
+        );
+        if (!callbackDone) {
+          callback(true, callbackData);
+        }
+      }
+    });
+    ls.on("error", async error => {
+      console.log(`%s ${error.message}`, chalk.green.bold("Error: "));
+    });
+  } catch (err) {
+    console.log(
+      `%s ${errorRequest.message}: ` + err,
+      chalk.red.bold(`${callerID}: `)
+    );
+  }
+}
+
+exports.cliSpawnCommand = cliSpawnCommand;
+
 async function installContainerServices(options) {
   let status = new Spinner(
     "Removing any existing Docker Container Services..."
@@ -1653,3 +1751,18 @@ async function setupDorcasCoreOAuth(options) {
   });
   return res.data;
 }
+
+function isValidURL(str) {
+  var pattern = new RegExp(
+    "^(https?:\\/\\/)?" + // protocol
+    "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
+    "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
+    "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
+    "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
+      "(\\#[-a-z\\d_]*)?$",
+    "i"
+  ); // fragment locator
+  return !!pattern.test(str);
+}
+
+exports.isValidURL = isValidURL;

@@ -33,7 +33,11 @@ const modullo = require(path.join(
 ));
 const containerRegistry = require(path.join(
   __dirname,
-  "../iaas/container-registry/containerRegistry.js"
+  "../infrastructure/container-registry/containerRegistry.js"
+));
+const repository = require(path.join(
+  __dirname,
+  "../infrastructure/repository/repository.js"
 ));
 
 clear();
@@ -106,6 +110,9 @@ async function initModulloCLI(options) {
       switch (options.createInfrastructure) {
         case "container-registry":
           containerRegistry.createInit(options, "");
+          break;
+        case "repository":
+          repository.createInit(options, "");
           break;
       }
 

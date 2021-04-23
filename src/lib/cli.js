@@ -35,40 +35,54 @@ async function cli(args) {
 
   function parseArgumentsIntoOptions(rawArgs) {
     try {
-      const args = arg(
-        {
-          "--action": String,
-          "--auto": Boolean,
-          "--command_path": String,
-          "--env_path": String,
-          "--debug": Boolean,
-          "--arguments": Boolean,
-          "--interactive": Boolean,
-          "--template": String,
-          "--email": String,
-          "--agreement": String,
-          "--platform": String,
-          "--framework": String,
-          "--infrastructure": String,
-          "--premium": Boolean,
-          "--app": String,
-          "--keypair": String,
-          "--aws-account-id": String,
-          "--aws-access-key": String,
-          "--aws-secret-key": String,
-          "--aws-region": String,
-          "--firstname": String,
-          "--lastname": String,
-          "--email": String,
-          "--password": String,
-          "--domain": String,
-          "--dns": String,
-          "--dns_resolver": String,
-          "--registry-name": String
-        },
-        { argv: rawArgs.slice(2) }
-      );
-      return {
+      let baseArgs = {
+        "--action": String,
+        "--auto": Boolean,
+        "--command_path": String,
+        "--env_path": String,
+        "--debug": Boolean,
+        "--arguments": Boolean,
+        "--interactive": Boolean,
+        "--template": String,
+        "--email": String,
+        "--agreement": String,
+        "--platform": String,
+        "--framework": String,
+        "--infrastructure": String,
+        "--premium": Boolean,
+        "--app": String,
+        "--keypair": String,
+        "--aws-account-id": String,
+        "--aws-access-key": String,
+        "--aws-secret-key": String,
+        "--aws-region": String,
+        "--firstname": String,
+        "--lastname": String,
+        "--email": String,
+        "--password": String,
+        "--domain": String,
+        "--dns": String,
+        "--dns_resolver": String,
+        "--azure-region": String,
+        "--registry-name": String,
+        "--repository-name": String
+      };
+
+      //add additional baseArgs from infrastructure, platform or framework requirements
+      let finalArgs = {
+        ...baseArgs,
+        ...frameworkRequirements.getArgs(),
+        ...platformRequirements.getArgs(),
+        ...infrastructureRequirements.getArgs()
+      };
+
+      //console.log(finalArgs)
+
+      const args = arg(finalArgs, { argv: rawArgs.slice(2) });
+
+      //console.log(args)
+
+      let baseOptions = {
         targetDirectory: "",
         missingArguments: {},
         answers: [],
@@ -103,8 +117,19 @@ async function cli(args) {
         argDomain: args["--domain"],
         argDNS: args["--dns"] || "localhost",
         argDNSResolver: args["--dns_resolver"] || "valet",
-        registryName: args["--registry-name"],
-        deployAzureRegion: args["--azure-region"] || "ukwest"
+        registryName: args["--registry-name"] || "",
+        deployAzureRegion: args["--azure-region"] || "ukwest",
+        repositoryName: args["--repository-name"] || ""
+      };
+
+      //console.log(baseOptions)
+
+      //add additional baseOptions from infrastructure, platform or framework requirements
+      return {
+        ...baseOptions,
+        ...frameworkRequirements.getOptions(args),
+        ...platformRequirements.getOptions(args),
+        ...infrastructureRequirements.getOptions(args)
       };
     } catch (err) {
       console.error(
@@ -153,11 +178,9 @@ async function cli(args) {
 
     // Validate framework, infrastructure and platform choice
     if (
-      (!["modullo", "wordpress"].includes(options.installFramework) &&
-        !["container-registry", "pipeline"].includes(
-          options.createInfrastructure
-        )) ||
-      !["local", "aws", "azure"].includes(options.deployPlatform)
+      (!params.frameworks.list.includes(options.installFramework) &&
+        !params.infrastructure.list.includes(options.createInfrastructure)) ||
+      !params.platforms.list.includes(options.deployPlatform)
     ) {
       console.error(
         "%s Please specify a valid framework / infrastructure and platform to proceed!",
@@ -182,10 +205,17 @@ async function cli(args) {
         options.template =
           options.installFramework == "modullo" ? "modullo" : "create";
 
+        let framework_infrastructure;
+
+        framework_infrastructure =
+          options.installFramework == ""
+            ? options.createInfrastructure
+            : options.installFramework;
+
         console.log(
           `\n` +
             `Setting up ${chalk.gray.bold(
-              options.installFramework.toUpperCase()
+              framework_infrastructure.toUpperCase()
             )} on ${chalk.gray.italic.bold(
               options.deployPlatform.toUpperCase()
             )} ...`

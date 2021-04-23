@@ -17,6 +17,48 @@ var params = {
     default_domain_production: "modullo-prod.test",
     default_domain_development: "modullo-dev.test"
   },
+  frameworks: {
+    list: ["modullo", "wordpress"],
+    data: {
+      modullo: {
+        name: "Modullo"
+      },
+      wordpress: {
+        name: "Wordpress"
+      }
+    }
+  },
+  infrastructure: {
+    list: ["pipeline", "container-registry", "repository"],
+    data: {
+      pipeline: {
+        name: "Pipeline"
+      },
+      "container-registry": {
+        name: "Container Registry"
+      },
+      repository: {
+        name: "Code Repository"
+      }
+    }
+  },
+  platforms: {
+    list: ["local", "aws", "azure", "github"],
+    data: {
+      local: {
+        name: "Local"
+      },
+      aws: {
+        name: "AWS"
+      },
+      azure: {
+        name: "Azure"
+      },
+      github: {
+        name: "Github"
+      }
+    }
+  },
   versions: {
     production: {
       services: [

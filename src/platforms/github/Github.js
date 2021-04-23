@@ -18,29 +18,12 @@ const utilities = require(path.join(__dirname, "../../lib/utilities.js"));
 
 async function cliRequirements(options) {
   if (options.installInteractive) {
-    const answers = await inquirer.prompt(inquiries.inquiries_azure);
+    const answers = await inquirer.prompt(inquiries.inquiries_github);
     options.answers = answers;
     return options;
   }
 
   if (options.installArguments) {
-    if (
-      ![
-        "ukwest",
-        "uksouth",
-        "eastus",
-        "westus",
-        "southafricanorth",
-        "southafricawest",
-        "northeurope",
-        "westeurope"
-      ].includes(options.deployAzureRegion)
-    ) {
-      options.missingArguments["azure-region"] =
-        "Please enter your Azure Region";
-    } else {
-      options.answers["azure-region"] = options.deployAzureRegion;
-    }
     return options;
   }
 }
@@ -50,17 +33,17 @@ exports.cliRequirements = cliRequirements;
 function deployRequirements(options, service = "") {
   var count_checks = 0;
 
-  let AzureReqs = [
+  let GithubReqs = [
     {
-      title: "Checking for Azure CLI",
+      title: "Checking for Github CLI",
       task: (ctx, task) =>
-        execa("az", ["--version"])
+        execa("gh", ["--version"])
           .then(result => {
-            if (result.stdout.includes("azure-cli")) {
+            if (result.stdout.includes("gh version")) {
               count_checks++;
             } else {
               throw new Error(
-                "Azure CLI not available. Download at https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
+                "Github CLI not available. Download at https://cli.github.com/"
               );
             }
           })
@@ -68,48 +51,47 @@ function deployRequirements(options, service = "") {
             console.log(e);
             ctx.aws = false;
             throw new Error(
-              "Azure CLI not available. Download at https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
+              "Github CLI not available. Download at https://cli.github.com/"
             );
           })
     }
   ];
 
-  const requirementsAzure = {
-    title: "Azure Automation",
+  const requirementsGithub = {
+    title: "Github Automation",
     task: () => {
-      return new Listr(AzureReqs, { concurrent: false });
+      return new Listr(GithubReqs, { concurrent: false });
     }
   };
 
-  return [requirementsAzure, count_checks];
+  return [requirementsGithub, count_checks];
 }
 
 exports.deployRequirements = deployRequirements;
 
-async function configInit(options, platform, service = null) {
+async function configInit(options, platform, service = null, callback) {
   const status = new Spinner(
     `Initializing ${platform.toUpperCase()} Activity...`
   );
   status.start();
   status.stop();
 
-  let azureLoginCommand = "az login";
-  await utilities.cliSpawnCallback(
+  let githubLoginCommand = "gh auth login -w";
+  await utilities.cliSpawnCommand(
     options,
-    azureLoginCommand,
-    "Azure Login",
-    "Azure Login Successful",
-    "Azure Login Error",
-    async function(loginResult, returnOutput) {
-      console.log("CD: " + returnOutput);
-      if (loginResult) {
-        return true;
-      } else {
-        return false;
-      }
+    githubLoginCommand,
+    "Github Login",
+    {
+      message: "Github Login Successful",
+      catch: true,
+      catchStrings: ["already logged", "Logged in as"]
     },
-    true,
-    "You have logged in"
+    {
+      message: "Github Login Error",
+      catch: false,
+      catchStrings: ["error"]
+    },
+    callback
   );
 }
 

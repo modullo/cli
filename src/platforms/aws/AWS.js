@@ -12,7 +12,7 @@ const { Spinner, ncp, util, access, params, Str } = require(path.join(
 ));
 var _ = require("lodash/core");
 const inquirer = require("inquirer");
-const { pipeline } = require("stream");
+//const { pipeline } = require("stream");
 const inquiries = require(path.join(__dirname, "./inquirer.js"));
 const utilities = require(path.join(__dirname, "../../lib/utilities.js"));
 

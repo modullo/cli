@@ -15,6 +15,18 @@ const azure = require(path.join(__dirname, "../platforms/azure/Azure.js"));
 
 const local = require(path.join(__dirname, "../platforms/local/Local.js"));
 
+const github = require(path.join(__dirname, "../platforms/github/Github.js"));
+
+function getArgs() {
+  return {};
+}
+exports.getArgs = getArgs;
+
+function getOptions(args) {
+  return {};
+}
+exports.getOptions = getOptions;
+
 async function deployRequirements(
   platform,
   additionalRequirements,
@@ -143,6 +155,13 @@ async function checkRequirements(options, service = "") {
     let optionsPlatform = await azure.cliRequirements(options);
     let req = azure.deployRequirements(options, service); // extract specific Azure Deployment requirements
     await deployRequirements("azure", req[0], req[1]);
+    return optionsPlatform;
+  }
+
+  if (options.deployPlatform == "github") {
+    let optionsPlatform = await github.cliRequirements(options);
+    let req = github.deployRequirements(options, service); // extract specific Azure Deployment requirements
+    await deployRequirements("github", req[0], req[1]);
     return optionsPlatform;
   }
 }
