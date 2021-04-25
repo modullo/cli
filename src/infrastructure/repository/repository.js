@@ -85,9 +85,13 @@ async function createInit(options, platform, service = "") {
 
         let createRepositoryCommand = "";
 
+        let spawnCompleteString = repos[0];
+
         for ($i = 0; $i < repos.length; $i++) {
           createRepositoryCommand += $i > 0 ? ` && ` : ``;
           createRepositoryCommand += `gh repo create ${repos[$i]} --confirm --description "${options.repositoryDescription}" --${options.repositoryVisibility}`;
+          spawnCompleteString =
+            $i > 0 && $i == repos.length - 1 ? repos[$i] : ``;
         }
 
         await utilities.cliSpawnCommand(
@@ -95,7 +99,7 @@ async function createInit(options, platform, service = "") {
           createRepositoryCommand,
           "Github",
           {
-            message: `Successfully created Github repositor(ies)`,
+            message: `Successfully created Github repository`,
             catch: true,
             catchStrings: ["https://github.com/"]
           },
@@ -107,15 +111,14 @@ async function createInit(options, platform, service = "") {
           async function(repoCreateResult, resultString = "") {
             if (repoCreateResult) {
               console.log(
-                `%s Repository Creation Complete`,
+                `%s Repository Creation Complete: ${resultString.toString()}`,
                 chalk.green.bold("Github: ")
               );
-              //if (utilities.isValidURL(resultString.toString())) {
-              console.log(resultString.toString());
               await open(resultString.toString());
-              //}
 
-              process.exit(1);
+              if (resultString.includes(spawnCompleteString)) {
+                process.exit(1);
+              }
             }
           }
         );
