@@ -1,10 +1,10 @@
-## Welcome to the Modullo Installation Guide
+## Welcome to the Modullo CLI Guide
 
-This provides a guide on how to setup Modullo.
+Modullo is a modern developer "Swiss Army Knife" facilitating rapid application prototyping with multiple software frameworks, CI/CD, containerized packaging and deployment across IaaS and PaaS providers.
 
-To learn more about the Modullo Framework, [read the documentation](https://github.com/modullo/wiki/Business)
+The Modullo CLI also containers its own software and infrastructure platform
 
-
+To learn more about the Modullo Framework, [read the documentation](https://github.com/modullo)
 
 ### Support or Contact
 
