@@ -6,6 +6,10 @@ The Modullo CLI also containers its own software and infrastructure platform
 
 To learn more about the Modullo Framework, [read the documentation](https://github.com/modullo)
 
+### Whats New?
+
+- Create one or multiple Github repositories with a single CLI command
+
 ### Support or Contact
 
 Have any queries? Send an email to **support@modullo.io** or [visit the website](https://modullo.io).
