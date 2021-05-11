@@ -8,6 +8,7 @@ To learn more about the Modullo Framework, [read the documentation](https://gith
 
 ### Whats New?
 
+- Provision remote Linux VMs
 - Create one or multiple Github repositories with a single CLI command
 
 ### Support or Contact

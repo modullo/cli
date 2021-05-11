@@ -41,6 +41,8 @@ async function createInit(options, platform, service = "") {
   );
   await status.start();
 
+  platform = platform == "aws" ? "ecs" : platform; //handle subplatforms within platforms
+
   if (platform == "ecs") {
     //await aws.configInit(options, "ecs", service); //configure AWS environment
     //console.log(`%s Configuring ECS`, chalk.green.bold("AWS: "));
@@ -198,7 +200,143 @@ async function createInit(options, platform, service = "") {
     }
   }
 
-  //return true;
+  if (platform == "local") {
+    //configure local??
+
+    //env
+    //docker-compose
+    //run docker-compose
+
+    try {
+      //prepare ENV params
+      let appPort = utilities.choosePort();
+      let dbPassword = options.databasePassword;
+      let mysqlPort = utilities.choosePort();
+      let mysqlVersion = `5.7`;
+      let mysqlRootPass = Str.random(18);
+      let mysqlDB = `wordpress`;
+      let mysqlUser = `wordpress`;
+      let mysqlPass = Str.random(18);
+      let wordpressVersion = `latest`;
+      let wordpressDB = mysqlDB;
+      let wordpressUser = mysqlUser;
+      let wordpressPass = mysqlPass;
+
+      let envData = {
+        APP_NAME: `${options.appName}`,
+        APP_PORT: appPort,
+        MYSQL_VERSION: `${mysqlVersion}`,
+        MYSQL_ROOT_PASSWORD: `${mysqlRootPass}`,
+        MYSQL_PORT: mysqlPort,
+        MYSQL_DATABASE: mysqlDB,
+        MYSQL_USER: mysqlUser,
+        MYSQL_PASSWORD: `${dbPassword}`,
+        WORDPRESS_VERSION: wordpressVersion,
+        WORDPRESS_DATABASE: wordpressDB,
+        WORDPRESS_USER: wordpressUser,
+        WORDPRESS_PASSWORD: `${wordpressPass}`
+      };
+
+      let dockerComposeENVPath = options.targetDirectory + `/.env`;
+
+      await utilities.writeENV(
+        options,
+        "Wordpress",
+        envData,
+        dockerComposeENVPath,
+        async function(envResult) {
+          if (envResult) {
+            //lets create a Docker compose file for the Wordpress & Database containers
+            let dockerComposeYAML = {
+              version: "3.3",
+              services: {
+                db: {
+                  image: `mysql:${mysqlVersion}`,
+                  volumes: [`db_data:/var/lib/mysql`],
+                  ports: [`${mysqlPort}:3306`],
+                  restart: `always`,
+                  environment: {
+                    MYSQL_ROOT_PASSWORD: dbPassword,
+                    MYSQL_DATABASE: `${mysqlDB}`,
+                    MYSQL_USER: `${mysqlUser}`,
+                    MYSQL_PASSWORD: `${mysqlPass}`
+                  }
+                },
+                wordpress: {
+                  image: `wordpress:${wordpressVersion}`,
+                  depends_on: [`db`],
+                  ports: [`${appPort}:80`],
+                  restart: `always`,
+                  environment: {
+                    WORDPRESS_DB_HOST: `db:3306`,
+                    WORDPRESS_DB_USER: `${wordpressUser}`,
+                    WORDPRESS_DB_PASSWORD: `${wordpressPass}`,
+                    WORDPRESS_DB_NAME: `${wordpressDB}`
+                  }
+                }
+              }
+            };
+
+            let dockerComposePath =
+              options.targetDirectory + `/docker-compose.yml`;
+
+            await utilities.writeYAML(
+              options,
+              dockerComposeYAML,
+              dockerComposePath,
+              async function(result) {
+                if (result) {
+                  console.log(
+                    `%s Succesfully written docker-compose YAML to ${dockerComposePath}`,
+                    chalk.green.bold(`Wordpress:`)
+                  );
+
+                  //now lets start the machine
+                  let startWordpressContainer = `cd ${options.targetDirectory}`;
+                  startWordpressContainer += ` && docker-compose up -d`;
+
+                  await utilities.cliSpawnCommand(
+                    options,
+                    startWordpressContainer,
+                    "Wordpress",
+                    {
+                      message: "Deployment Successful",
+                      catch: true,
+                      catchStrings: ["already logged", "Logged in as"]
+                    },
+                    {
+                      message: "Deployment Error",
+                      catch: false,
+                      catchStrings: ["error"]
+                    },
+                    async function(wordpressResult) {
+                      console.log(
+                        `%s Successfully deployment to ${options.deployPlatform}`,
+                        chalk.green.bold(`Wordpress:`)
+                      );
+                    }
+                  );
+                } else {
+                  console.log(
+                    `%s Error writing docker-compose YAML to ${dockerComposePath}`,
+                    chalk.red.bold(`Wordpress:`)
+                  );
+                }
+              }
+            );
+          } else {
+            console.log(
+              `%s Error writing ENV to ${dockerComposeENVPath}`,
+              chalk.red.bold(`Wordpress:`)
+            );
+          }
+        }
+      );
+    } catch (err) {
+      console.log("%s Configure error: " + err, chalk.red.bold("Error: "));
+      await status.stop();
+    }
+  }
 }
 
 exports.createInit = createInit;

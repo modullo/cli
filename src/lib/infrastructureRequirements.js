@@ -39,6 +39,11 @@ async function checkRequirements(options, service = "") {
     optionsInfrastructure = await repository.cliRequirements(options); // require specific Repository CLI requirements
     return optionsInfrastructure;
   }
+  if (options.createInfrastructure == "vm") {
+    // optionsInfrastructure = await repository.cliRequirements(options); // require specific Repository CLI requirements
+    // return optionsInfrastructure;
+    return options;
+  }
 }
 
 exports.checkRequirements = checkRequirements;

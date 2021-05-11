@@ -31,6 +31,10 @@ const modullo = require(path.join(
   __dirname,
   "../frameworks/modullo/Modullo.js"
 ));
+const software = require(path.join(
+  __dirname,
+  "../frameworks/software/Software.js"
+));
 const containerRegistry = require(path.join(
   __dirname,
   "../infrastructure/container-registry/containerRegistry.js"
@@ -103,7 +107,7 @@ async function initModulloCLI(options) {
           break;
 
         case "wordpress":
-          wordpress.createInit(options, "ecs");
+          wordpress.createInit(options, options.deployPlatform);
           break;
       }
 
@@ -113,6 +117,19 @@ async function initModulloCLI(options) {
           break;
         case "repository":
           repository.createInit(options, "");
+          break;
+      }
+
+      break;
+
+    case "provision":
+      switch (options.installFramework) {
+        case "software":
+          software.createInit(
+            options,
+            options.deployPlatform,
+            options.createInfrastructure
+          );
           break;
       }
 

@@ -17,6 +17,7 @@ const mysql = require("mysql");
 const Str = require("@supercharge/strings");
 const params = require(path.join(__dirname, "./params.js"));
 const yaml = require("js-yaml");
+var ini = require("ini");
 
 async function installTemplateFiles(options) {
   if (options.debugMode) {
@@ -1766,3 +1767,49 @@ function isValidURL(str) {
 }
 
 exports.isValidURL = isValidURL;
+
+function choosePort(fromPort = 60000, toPort = 65000) {
+  var port = 6000;
+
+  let min = Math.ceil(fromPort);
+  let max = Math.floor(65000);
+  port = Math.floor(Math.random() * (max - min + 1)) + min;
+
+  return port;
+}
+
+exports.choosePort = choosePort;
+
+async function writeENV(options, owner_id, data, output_path, callback) {
+  fs.writeFile(output_path, envfile.stringify(data), err => {
+    if (err) {
+      console.log(`%s Error writing ENV: ${err}`, chalk.red.bold("CLI Error"));
+      callback(false);
+    } else {
+      console.log(
+        `%s Succesfully written ENV to ${output_path}`,
+        chalk.green.bold(`${owner_id}`)
+      );
+      callback(true);
+    }
+  });
+}
+
+exports.writeENV = writeENV;
+
+async function writeINI(options, owner_id, data, output_path, callback) {
+  fs.writeFile(output_path, ini.stringify(data), err => {
+    if (err) {
+      console.log(`%s Error writing INI: ${err}`, chalk.red.bold("CLI Error"));
+      callback(false);
+    } else {
+      console.log(
+        `%s Succesfully written INI to ${output_path}`,
+        chalk.green.bold(`${owner_id}`)
+      );
+      callback(true);
+    }
+  });
+}
+
+exports.writeINI = writeINI;

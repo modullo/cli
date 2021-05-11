@@ -25,11 +25,21 @@ var params = {
       },
       wordpress: {
         name: "Wordpress"
+      },
+      ansible: {
+        name: "Ansible"
+      },
+      software: {
+        name: "Software",
+        linux: {
+          stacks: ["lemp", "lamp"],
+          packages: ["php", "nginx", "apache", "mysql", "custom"]
+        }
       }
     }
   },
   infrastructure: {
-    list: ["pipeline", "container-registry", "repository"],
+    list: ["pipeline", "container-registry", "repository", "vm"],
     data: {
       pipeline: {
         name: "Pipeline"
@@ -43,7 +53,7 @@ var params = {
     }
   },
   platforms: {
-    list: ["local", "aws", "azure", "github"],
+    list: ["local", "aws", "azure", "github", "linux"],
     data: {
       local: {
         name: "Local"
@@ -56,6 +66,9 @@ var params = {
       },
       github: {
         name: "Github"
+      },
+      linux: {
+        name: "Linux"
       }
     }
   },

@@ -116,8 +116,21 @@ async function createInit(options, platform, service = "") {
               );
               await open(resultString.toString());
 
-              if (resultString.includes(spawnCompleteString)) {
+              if (
+                resultString.includes(spawnCompleteString) &&
+                !options.createProject
+              ) {
                 process.exit(1);
+              }
+
+              if (options.createProject) {
+                // echo "# frameworks" >> README.md
+                // git init
+                // git add README.md
+                // git commit -m "first commit"
+                // git branch -M main
+                // git remote add origin https://github.com/modullo/frameworks.git
+                // git push -u origin main
               }
             }
           }

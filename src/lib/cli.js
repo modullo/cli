@@ -43,6 +43,7 @@ async function cli(args) {
         "--debug": Boolean,
         "--arguments": Boolean,
         "--interactive": Boolean,
+        "--create-project": Boolean,
         "--template": String,
         "--email": String,
         "--agreement": String,
@@ -95,6 +96,7 @@ async function cli(args) {
         defaultAction: rawArgs[2] || "help",
         debugMode: args["--debug"] || false,
         databasePassword: Str.random(18),
+        createProject: args["--create-project"] || false,
         argTemplate: args["--template"] || "production",
         argEmail: args["--email"],
         argAgreeementTOS: args["--agreement"],
@@ -196,22 +198,22 @@ async function cli(args) {
       process.exit(1);
     }
 
+    let framework_infrastructure;
+
+    framework_infrastructure =
+      options.installFramework == ""
+        ? options.createInfrastructure
+        : options.installFramework;
+
+    options.targetDirectory =
+      process.cwd() +
+      `/${params.general.create_output_folder}-${framework_infrastructure}-${options.deployPlatform}`;
+
+    options.template =
+      options.installFramework == "modullo" ? "modullo" : "create";
+
     switch (options.defaultAction) {
       case "create":
-        options.targetDirectory =
-          process.cwd() +
-          `/${params.general.create_output_folder}-${options.installFramework}-${options.deployPlatform}`;
-
-        options.template =
-          options.installFramework == "modullo" ? "modullo" : "create";
-
-        let framework_infrastructure;
-
-        framework_infrastructure =
-          options.installFramework == ""
-            ? options.createInfrastructure
-            : options.installFramework;
-
         console.log(
           `\n` +
             `Setting up ${chalk.gray.bold(
@@ -236,6 +238,38 @@ async function cli(args) {
         }
 
         //console.log(options)
+
+        // require framework requirements
+        if (options.installFramework != "") {
+          options = await frameworkRequirements.checkRequirements(options);
+        }
+
+        //console.log(options)
+
+        break;
+
+      case "provision":
+        options.template = "provision";
+        console.log(
+          `\n` +
+            `Provisioning a/an ${chalk.gray.italic.bold(
+              options.deployPlatform.toUpperCase()
+            )} ${chalk.gray.italic.bold(
+              options.createInfrastructure
+            )} machine with ${chalk.gray.bold(options.installFramework)} ...`
+        );
+
+        await installRequirements.installRequirements(); // require standard Modullo CLI requirements
+
+        // require platform requirements
+        if (options.deployPlatform != "") {
+          options = await platformRequirements.checkRequirements(options);
+        }
+
+        // require infrastructure requirements
+        if (options.createInfrastructure != "") {
+          options = await infrastructureRequirements.checkRequirements(options);
+        }
 
         // require framework requirements
         if (options.installFramework != "") {

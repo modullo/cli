@@ -9,13 +9,24 @@ const modullo = require(path.join(
   "../frameworks/modullo/Modullo.js"
 ));
 
+const software = require(path.join(
+  __dirname,
+  "../frameworks/software/Software.js"
+));
+
 function getArgs() {
-  return {};
+  return {
+    "--software-package-type": String,
+    "--software-package": String
+  };
 }
 exports.getArgs = getArgs;
 
 function getOptions(args) {
-  return {};
+  return {
+    softwarePackageType: args["--software-package-type"] || "single",
+    softwarePackage: args["--software-package"] || "custom"
+  };
 }
 exports.getOptions = getOptions;
 
@@ -27,6 +38,11 @@ async function checkRequirements(options, service = "") {
   }
   if (options.installFramework == "modullo") {
     optionsFramework = await modullo.cliRequirements(options); // require specific Wordpress CLI requirements
+    // wordpress.createInit(options);
+    return optionsFramework;
+  }
+  if (options.installFramework == "software") {
+    optionsFramework = await software.cliRequirements(options); // require specific Wordpress CLI requirements
     // wordpress.createInit(options);
     return optionsFramework;
   }

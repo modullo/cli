@@ -17,13 +17,24 @@ const local = require(path.join(__dirname, "../platforms/local/Local.js"));
 
 const github = require(path.join(__dirname, "../platforms/github/Github.js"));
 
+const linux = require(path.join(__dirname, "../platforms/linux/Linux.js"));
+
 function getArgs() {
-  return {};
+  return {
+    "--machine-host": String,
+    "--machine-username": String,
+    "--machine-key-path": String
+  };
 }
 exports.getArgs = getArgs;
 
 function getOptions(args) {
-  return {};
+  return {
+    machineHost: args["--machine-host"] || "",
+    machineUsername: args["--machine-username"] || "ubuntu",
+    machineKeyPath: args["--machine-key-path"] || "",
+    ansibleInventoryPath: ""
+  };
 }
 exports.getOptions = getOptions;
 
@@ -162,6 +173,13 @@ async function checkRequirements(options, service = "") {
     let optionsPlatform = await github.cliRequirements(options);
     let req = github.deployRequirements(options, service); // extract specific Azure Deployment requirements
     await deployRequirements("github", req[0], req[1]);
+    return optionsPlatform;
+  }
+
+  if (options.deployPlatform == "linux") {
+    let optionsPlatform = await linux.cliRequirements(options);
+    let req = linux.deployRequirements(options, service); // extract specific Azure Deployment requirements
+    await deployRequirements("linux", req[0], req[1]);
     return optionsPlatform;
   }
 }
