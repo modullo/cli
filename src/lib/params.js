@@ -17,6 +17,13 @@ var params = {
     default_domain_production: "modullo-prod.test",
     default_domain_development: "modullo-dev.test"
   },
+  installer: {
+    available_os: ["win32", "darwin"],
+    available_software: {
+      win32: [""],
+      darwin: [""]
+    }
+  },
   frameworks: {
     list: ["modullo", "wordpress"],
     data: {
