@@ -53,10 +53,6 @@ async function cli(args) {
         "--premium": Boolean,
         "--app": String,
         "--keypair": String,
-        "--aws-account-id": String,
-        "--aws-access-key": String,
-        "--aws-secret-key": String,
-        "--aws-region": String,
         "--firstname": String,
         "--lastname": String,
         "--email": String,
@@ -84,6 +80,8 @@ async function cli(args) {
       //console.log(args)
 
       let baseOptions = {
+        modulloOS: "",
+        modulloOSFull: "",
         targetDirectory: "",
         missingArguments: {},
         answers: [],
@@ -107,10 +105,6 @@ async function cli(args) {
         deployPremium: args["--premium"] || false,
         appName: args["--app"] || "",
         deployKeyPair: args["--keypair"] || "none",
-        deployAWSAccountID: args["--aws-account-id"] || "",
-        deployAWSAccessKey: args["--aws-access-key"] || "",
-        deployAWSSecretKey: args["--aws-secret-key"] || "",
-        deployAWSRegion: args["--aws-region"] || "",
         deployAWSInstanceType: args["--aws-instance-type"] || "t2.micro",
         deployAWSInstanceSize: args["--aws-instance-size"] || 1,
         argFirstname: args["--firstname"],
@@ -158,6 +152,18 @@ async function cli(args) {
 
     //let optionsArguments = [];
     //options.missingArguments = {};
+
+    //determine OS
+    options.modulloOS = process.platform;
+
+    switch (options.modulloOS) {
+      case "win32":
+        options.modulloOSFull = "Windows OS";
+        break;
+      case "darwin":
+        options.modulloOSFull = "Mac OS";
+        break;
+    }
 
     if (
       !options.argEmail ||

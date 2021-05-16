@@ -356,6 +356,7 @@ async function createInit(options, platform, service = "") {
                           `%s Opening Wordpress App setup at http://localhost:${appPort}. You can login to admin at http://localhost:${appPort}/wp-admin with Username ${options.argEmail} and Password ${userPassword}`,
                           chalk.green.bold(`Wordpress:`)
                         );
+                        await open(`http://localhost:${appPort}/wp-admin`);
                         await open(`http://localhost:${appPort}`);
                         status.stop();
                         process.exit(1);

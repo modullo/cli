@@ -1,8 +1,6 @@
 ## Welcome to the Modullo CLI Guide
 
-Modullo is a modern developer "Swiss Army Knife" facilitating rapid application prototyping with multiple software frameworks, CI/CD, containerized packaging and deployment across IaaS and PaaS providers.
-
-The Modullo CLI also containers its own software and infrastructure platform
+Modullo is a modern developer application platform and CLI "Swiss Army Knife" tool to facilite rapid application prototyping with multiple software frameworks, CI/CD, containerized packaging and deployment across multiple IaaS and PaaS providers.
 
 To learn more about the Modullo Framework, [read the documentation](https://github.com/modullo)
 

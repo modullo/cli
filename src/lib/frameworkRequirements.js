@@ -39,12 +39,12 @@ async function checkRequirements(options, service = "") {
     return optionsFramework;
   }
   if (options.installFramework == "modullo") {
-    optionsFramework = await modullo.cliRequirements(options); // require specific Wordpress CLI requirements
+    optionsFramework = await modullo.cliRequirements(options); // require specific Modullo CLI requirements
     // wordpress.createInit(options);
     return optionsFramework;
   }
   if (options.installFramework == "software") {
-    optionsFramework = await software.cliRequirements(options); // require specific Wordpress CLI requirements
+    optionsFramework = await software.cliRequirements(options); // require specific Software CLI requirements
     // wordpress.createInit(options);
     return optionsFramework;
   }

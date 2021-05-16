@@ -51,14 +51,6 @@ console.log(
   )
 );
 
-console.log(
-  `Welcome to the ${params.general.title_full} v` +
-    require(path.join(__dirname, "../../package.json")).version
-);
-console.log(
-  `You can exit the ${params.general.title} CLI at any time by hitting CTRL + C`
-);
-
 function installerHelp() {
   console.log(chalk.blue(`Below are the key commands you can run:`));
   console.log(
@@ -72,6 +64,15 @@ function installerHelp() {
 }
 
 async function initModulloCLI(options) {
+  console.log(
+    `Welcome to the ${params.general.title_full} v` +
+      require(path.join(__dirname, "../../package.json")).version +
+      ` running on ${options.modulloOSFull}`
+  );
+  console.log(
+    `You can exit the ${params.general.title} CLI at any time by hitting CTRL + C \n`
+  );
+
   const fullPathName = __dirname + "/main.js";
   const templateDir = path.resolve(
     fullPathName.substr(fullPathName.indexOf("/")),

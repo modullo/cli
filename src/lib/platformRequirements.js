@@ -21,6 +21,10 @@ const linux = require(path.join(__dirname, "../platforms/linux/Linux.js"));
 
 function getArgs() {
   return {
+    "--aws-account-id": String,
+    "--aws-access-key": String,
+    "--aws-secret-key": String,
+    "--aws-region": String,
     "--machine-host": String,
     "--machine-username": String,
     "--machine-key-path": String,
@@ -31,6 +35,10 @@ exports.getArgs = getArgs;
 
 function getOptions(args) {
   return {
+    deployAWSAccountID: args["--aws-account-id"] || "",
+    deployAWSAccessKey: args["--aws-access-key"] || "",
+    deployAWSSecretKey: args["--aws-secret-key"] || "",
+    deployAWSRegion: args["--aws-region"] || "",
     machineHost: args["--machine-host"] || "",
     machineUsername: args["--machine-username"] || "ubuntu",
     machineKeyPath: args["--machine-key-path"] || "",
