@@ -14,6 +14,7 @@ const inquiries = require(path.join(__dirname, "./inquirer.js"));
 var _ = require("lodash/core");
 const aws = require(path.join(__dirname, "../../platforms/aws/AWS.js"));
 const utilities = require(path.join(__dirname, "../../lib/utilities.js"));
+const open = require("open");
 
 async function cliRequirements(options) {
   if (options.installInteractive) {
@@ -28,7 +29,11 @@ async function cliRequirements(options) {
     } else {
       options.answers["app"] = options.appName;
     }
-
+    if (options.appUser == "") {
+      options.missingArguments["app-user"] = "Please provide an App User";
+    } else {
+      options.answers["app-user"] = options.appUser;
+    }
     return options;
   }
 }
@@ -216,25 +221,27 @@ async function createInit(options, platform, service = "") {
       let mysqlRootPass = Str.random(18);
       let mysqlDB = `wordpress`;
       let mysqlUser = `wordpress`;
-      let mysqlPass = Str.random(18);
+      let mysqlPass = dbPassword; //Str.random(18);
       let wordpressVersion = `latest`;
       let wordpressDB = mysqlDB;
       let wordpressUser = mysqlUser;
       let wordpressPass = mysqlPass;
+      let cliPort = utilities.choosePort();
 
       let envData = {
+        COMPOSE_PROJECT_NAME: `modullo_${options.modulloAppID}`,
         APP_NAME: `${options.appName}`,
         APP_PORT: appPort,
         MYSQL_VERSION: `${mysqlVersion}`,
-        MYSQL_ROOT_PASSWORD: `${mysqlRootPass}`,
+        MYSQL_ROOT_PASSWORD: `${dbPassword}`,
         MYSQL_PORT: mysqlPort,
         MYSQL_DATABASE: mysqlDB,
         MYSQL_USER: mysqlUser,
-        MYSQL_PASSWORD: `${dbPassword}`,
+        MYSQL_PASSWORD: mysqlPass,
         WORDPRESS_VERSION: wordpressVersion,
         WORDPRESS_DATABASE: wordpressDB,
         WORDPRESS_USER: wordpressUser,
-        WORDPRESS_PASSWORD: `${wordpressPass}`
+        WORDPRESS_PASSWORD: wordpressPass
       };
 
       let dockerComposeENVPath = options.targetDirectory + `/.env`;
@@ -247,33 +254,46 @@ async function createInit(options, platform, service = "") {
         async function(envResult) {
           if (envResult) {
             //lets create a Docker compose file for the Wordpress & Database containers
+
+            let userPassword = Str.random(18);
+
+            let cli_setup = `wp core install --path="/var/www/html" --url="http://localhost:${appPort}" --title="${options.appName}" --admin_user=${options.appUser} --admin_password=${userPassword} --admin_email=${options.argEmail}`;
+            let cli_plugins = `wp plugin install elementor all-in-one-wp-migration --activate`;
+
             let dockerComposeYAML = {
-              version: "3.3",
+              version: "3.1",
               services: {
                 db: {
+                  container_name: `wordpress_db_${options.modulloAppID}`,
                   image: `mysql:${mysqlVersion}`,
-                  volumes: [`db_data:/var/lib/mysql`],
+                  volumes: [`db_data:/var/www/html`],
                   ports: [`${mysqlPort}:3306`],
                   restart: `always`,
                   environment: {
-                    MYSQL_ROOT_PASSWORD: dbPassword,
+                    MYSQL_RANDOM_ROOT_PASSWORD: "1",
                     MYSQL_DATABASE: `${mysqlDB}`,
                     MYSQL_USER: `${mysqlUser}`,
                     MYSQL_PASSWORD: `${mysqlPass}`
                   }
                 },
                 wordpress: {
-                  image: `wordpress:${wordpressVersion}`,
+                  container_name: `wordpress_app_${options.modulloAppID}`,
+                  image: `wordpress`,
+                  volumes: [`wordpress_data:/var/lib/mysql`],
                   depends_on: [`db`],
                   ports: [`${appPort}:80`],
                   restart: `always`,
                   environment: {
-                    WORDPRESS_DB_HOST: `db:3306`,
+                    WORDPRESS_DB_HOST: `db`,
                     WORDPRESS_DB_USER: `${wordpressUser}`,
                     WORDPRESS_DB_PASSWORD: `${wordpressPass}`,
                     WORDPRESS_DB_NAME: `${wordpressDB}`
                   }
                 }
+              },
+              volumes: {
+                db_data: {},
+                wordpress_data: {}
               }
             };
 
@@ -293,7 +313,24 @@ async function createInit(options, platform, service = "") {
 
                   //now lets start the machine
                   let startWordpressContainer = `cd ${options.targetDirectory}`;
-                  startWordpressContainer += ` && docker-compose up -d`;
+                  startWordpressContainer += ` && docker compose up -d --remove-orphans`;
+                  startWordpressContainer += ` && echo "Waiting 15 secs for created Wordpress app to be available before setting it up..." && sleep 15s`;
+                  startWordpressContainer += ` && docker run -i --rm \
+                  --volumes-from wordpress_app_${options.modulloAppID} --network container:wordpress_app_${options.modulloAppID} \
+                  -e WORDPRESS_DB_HOST=db \
+                  -e WORDPRESS_DB_USER=${wordpressUser} \
+                  -e WORDPRESS_DB_PASSWORD=${wordpressPass} \
+                  -e WORDPRESS_DB_NAME=${wordpressDB} \
+                  --user 33:33 \
+                  wordpress:cli ${cli_setup}`;
+                  startWordpressContainer += ` && docker run -i --rm \
+                  --volumes-from wordpress_app_${options.modulloAppID} --network container:wordpress_app_${options.modulloAppID} \
+                  -e WORDPRESS_DB_HOST=db \
+                  -e WORDPRESS_DB_USER=${wordpressUser} \
+                  -e WORDPRESS_DB_PASSWORD=${wordpressPass} \
+                  -e WORDPRESS_DB_NAME=${wordpressDB} \
+                  --user 33:33 \
+                  wordpress:cli ${cli_plugins}`;
 
                   await utilities.cliSpawnCommand(
                     options,
@@ -310,10 +347,26 @@ async function createInit(options, platform, service = "") {
                       catchStrings: ["error"]
                     },
                     async function(wordpressResult) {
-                      console.log(
-                        `%s Successfully deployment to ${options.deployPlatform}`,
-                        chalk.green.bold(`Wordpress:`)
-                      );
+                      if (wordpressResult) {
+                        console.log(
+                          `%s Successfully deployment to ${options.deployPlatform}`,
+                          chalk.green.bold(`Wordpress:`)
+                        );
+                        console.log(
+                          `%s Opening Wordpress App setup at http://localhost:${appPort}. You can login to admin at http://localhost:${appPort}/wp-admin with Username ${options.argEmail} and Password ${userPassword}`,
+                          chalk.green.bold(`Wordpress:`)
+                        );
+                        await open(`http://localhost:${appPort}`);
+                        status.stop();
+                        process.exit(1);
+                      } else {
+                        console.log(
+                          `%s Error deploying Wordpress to ${options.deployPlatform}`,
+                          chalk.red.bold(`Wordpress:`)
+                        );
+                        status.stop();
+                        process.exit(1);
+                      }
                     }
                   );
                 } else {

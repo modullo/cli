@@ -96,6 +96,7 @@ async function cli(args) {
         defaultAction: rawArgs[2] || "help",
         debugMode: args["--debug"] || false,
         databasePassword: Str.random(18),
+        modulloAppID: Str.random(5),
         createProject: args["--create-project"] || false,
         argTemplate: args["--template"] || "production",
         argEmail: args["--email"],

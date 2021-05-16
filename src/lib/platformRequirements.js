@@ -23,7 +23,8 @@ function getArgs() {
   return {
     "--machine-host": String,
     "--machine-username": String,
-    "--machine-key-path": String
+    "--machine-key-path": String,
+    "--project-path": String
   };
 }
 exports.getArgs = getArgs;
@@ -33,7 +34,8 @@ function getOptions(args) {
     machineHost: args["--machine-host"] || "",
     machineUsername: args["--machine-username"] || "ubuntu",
     machineKeyPath: args["--machine-key-path"] || "",
-    ansibleInventoryPath: ""
+    ansibleInventoryPath: "",
+    projectPath: args["--machine-key-path"] || ""
   };
 }
 exports.getOptions = getOptions;
