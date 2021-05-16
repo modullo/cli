@@ -165,6 +165,12 @@ async function cli(args) {
         break;
     }
 
+    if (!params.installer.available_os.includes(options.modulloOS)) {
+      console.log("\n");
+      console.log(`%s Unsupported OS Platform`, chalk.red.bold("CLI"));
+      console.log("\n");
+    }
+
     if (
       !options.argEmail ||
       !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(
@@ -230,7 +236,7 @@ async function cli(args) {
             )} ...`
         );
 
-        await installRequirements.installRequirements(); // require standard Modullo CLI requirements
+        await installRequirements.installRequirements(options); // require standard Modullo CLI requirements
 
         // require platform requirements
         if (options.deployPlatform != "") {

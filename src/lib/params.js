@@ -19,9 +19,27 @@ var params = {
   },
   installer: {
     available_os: ["win32", "darwin"],
-    available_software: {
-      win32: [""],
-      darwin: [""]
+    data: {
+      win32: {
+        available_software: ["app_name"],
+        install_prefix: "choco install ",
+        data: {
+          app_name: {
+            message_success: "success",
+            message_error: "error"
+          }
+        }
+      },
+      darwin: {
+        available_software: ["app_name"],
+        install_prefix: "brew install ",
+        data: {
+          app_name: {
+            message_success: "success",
+            message_error: "error"
+          }
+        }
+      }
     }
   },
   frameworks: {

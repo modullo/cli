@@ -7,7 +7,7 @@ const Spinner = CLI.Spinner;
 const execa = require("execa");
 const chalk = require("chalk");
 
-async function modulloRequirements() {
+async function modulloRequirements(options) {
   const status = new Spinner("Checking for Requirements...");
   status.start();
 
@@ -16,212 +16,509 @@ async function modulloRequirements() {
 
   console.log("\n");
 
-  const modulloRequirement = new Listr([
-    {
-      title: "Node & NPM",
-      task: () => {
-        return new Listr(
-          [
-            {
-              title: "Checking Node",
-              task: (ctx, task) =>
-                execa("node", ["-v"])
-                  .then(result => {
-                    //command: 'node -v',exitCode: 0,stdout: 'v12.16.1',
-                    //stderr: '', all: undefined, failed: false, timedOut: false, isCanceled: false, killed: false
-                    if (
-                      result.stdout.includes(".") &&
-                      !result.stdout.includes("command not found")
-                    ) {
-                      count_checks++;
-                    } else {
+  console.log(options.modulloOS);
+
+  let modulloRequirement;
+
+  if (options.modulloOS == "darwin") {
+    console.log("mac");
+
+    modulloRequirement = new Listr([
+      {
+        title: "Node & NPM",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking Node",
+                task: (ctx, task) =>
+                  execa("node", ["-v"])
+                    .then(result => {
+                      //command: 'node -v',exitCode: 0,stdout: 'v12.16.1',
+                      //stderr: '', all: undefined, failed: false, timedOut: false, isCanceled: false, killed: false
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Node not available, visit https://nodejs.org/ to install"
+                        );
+                        throw new Error(
+                          "NPM not available, visit https://nodejs.org/ to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.node = false;
                       task.skip(
                         "Node not available, visit https://nodejs.org/ to install"
                       );
                       throw new Error(
                         "NPM not available, visit https://nodejs.org/ to install"
                       );
-                    }
-                  })
-                  .catch(() => {
-                    ctx.node = false;
-                    task.skip(
-                      "Node not available, visit https://nodejs.org/ to install"
-                    );
-                    throw new Error(
-                      "NPM not available, visit https://nodejs.org/ to install"
-                    );
-                  })
-            },
-            {
-              title: "Checking for NPM",
-              task: (ctx, task) =>
-                execa("npm", ["-v"])
-                  .then(result => {
-                    if (
-                      result.stdout.includes(".") &&
-                      !result.stdout.includes("command not found")
-                    ) {
-                      count_checks++;
-                    } else {
+                    })
+              },
+              {
+                title: "Checking for NPM",
+                task: (ctx, task) =>
+                  execa("npm", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Node not available, visit https://nodejs.org/ to install"
+                        );
+                        throw new Error(
+                          "NPM not available, visit https://nodejs.org/ to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.npm = false;
                       task.skip(
-                        "Node not available, visit https://nodejs.org/ to install"
+                        "NPM not available, visit https://nodejs.org/ to install"
                       );
                       throw new Error(
                         "NPM not available, visit https://nodejs.org/ to install"
                       );
-                    }
-                  })
-                  .catch(() => {
-                    ctx.npm = false;
-                    task.skip(
-                      "NPM not available, visit https://nodejs.org/ to install"
-                    );
-                    throw new Error(
-                      "NPM not available, visit https://nodejs.org/ to install"
-                    );
-                  })
-            }
-          ],
-          { concurrent: false }
-        );
-      }
-    },
-    {
-      title: "Docker",
-      task: () => {
-        return new Listr(
-          [
-            {
-              title: "Checking for Docker",
-              task: (ctx, task) =>
-                execa("docker", ["-v"])
-                  .then(result => {
-                    if (
-                      result.stdout.includes(".") &&
-                      !result.stdout.includes("command not found")
-                    ) {
-                      count_checks++;
-                    } else {
+                    })
+              }
+            ],
+            { concurrent: false }
+          );
+        }
+      },
+      {
+        title: "Docker",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking for Docker",
+                task: (ctx, task) =>
+                  execa("docker", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Docker not available, https://www.docker.com/get-started to install"
+                        );
+                        throw new Error(
+                          "Docker not available, https://www.docker.com/get-started to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.docker = false;
                       task.skip(
                         "Docker not available, https://www.docker.com/get-started to install"
                       );
                       throw new Error(
                         "Docker not available, https://www.docker.com/get-started to install"
                       );
-                    }
-                  })
-                  .catch(() => {
-                    ctx.docker = false;
-                    task.skip(
-                      "Docker not available, https://www.docker.com/get-started to install"
-                    );
-                    throw new Error(
-                      "Docker not available, https://www.docker.com/get-started to install"
-                    );
-                  })
-            },
-            {
-              title: "Checking for Docker Compose",
-              task: (ctx, task) =>
-                execa("docker-compose", ["-v"])
-                  .then(result => {
-                    if (
-                      result.stdout.includes(".") &&
-                      !result.stdout.includes("command not found")
-                    ) {
-                      count_checks++;
-                    } else {
+                    })
+              },
+              {
+                title: "Checking for Docker Compose",
+                task: (ctx, task) =>
+                  execa("docker-compose", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Docker not available, https://www.docker.com/get-started to install"
+                        );
+                        throw new Error(
+                          "Docker not available, https://www.docker.com/get-started to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.docker_compose = false;
                       task.skip(
                         "Docker not available, https://www.docker.com/get-started to install"
                       );
                       throw new Error(
                         "Docker not available, https://www.docker.com/get-started to install"
                       );
-                    }
-                  })
-                  .catch(() => {
-                    ctx.docker_compose = false;
-                    task.skip(
-                      "Docker not available, https://www.docker.com/get-started to install"
-                    );
-                    throw new Error(
-                      "Docker not available, https://www.docker.com/get-started to install"
-                    );
-                  })
-            }
-          ],
-          { concurrent: false }
-        );
-      }
-    },
-    {
-      title: "Utilities",
-      task: () => {
-        return new Listr(
-          [
-            {
-              title: "Checking for UnZip",
-              task: (ctx, task) =>
-                execa("unzip", ["-v"])
-                  .then(result => {
-                    if (
-                      result.stdout.includes("by Info-ZIP") &&
-                      !result.stdout.includes("command not found")
-                    ) {
-                      count_checks++;
-                    } else {
+                    })
+              }
+            ],
+            { concurrent: false }
+          );
+        }
+      },
+      {
+        title: "Package Manager",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking for Homebrew",
+                task: (ctx, task) =>
+                  execa("brew", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes("Homebrew/homebrew-core") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Homebrew not available, https://brew.sh/ to install"
+                        );
+                        throw new Error(
+                          "Homebrew not available, https://brew.sh/ to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.docker = false;
+                      task.skip(
+                        "Homebrew not available, https://brew.sh/ to install"
+                      );
+                      throw new Error(
+                        "Homebrew not available, https://brew.sh/ to install"
+                      );
+                    })
+              }
+            ],
+            { concurrent: false }
+          );
+        }
+      },
+      {
+        title: "Utilities",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking for UnZip",
+                task: (ctx, task) =>
+                  execa("unzip", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes("by Info-ZIP") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip("UnZip not available");
+                        throw new Error("UnZip not available");
+                      }
+                    })
+                    .catch(() => {
+                      ctx.unzip = false;
                       task.skip("UnZip not available");
                       throw new Error("UnZip not available");
-                    }
-                  })
-                  .catch(() => {
-                    ctx.unzip = false;
-                    task.skip("UnZip not available");
-                    throw new Error("UnZip not available");
-                  })
-            },
-            {
-              title: "Checking for cURL",
-              task: (ctx, task) =>
-                execa("curl", ["--version"])
-                  .then(result => {
-                    if (
-                      result.stdout.includes(".") &&
-                      !result.stdout.includes("command not found")
-                    ) {
-                      count_checks++;
-                    } else {
+                    })
+              },
+              {
+                title: "Checking for cURL",
+                task: (ctx, task) =>
+                  execa("curl", ["--version"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip("cURL not available");
+                        throw new Error("cURL not available");
+                      }
+                    })
+                    .catch(() => {
+                      ctx.curl = false;
                       task.skip("cURL not available");
                       throw new Error("cURL not available");
+                    })
+              },
+              {
+                title: "Checking for cp (copy utility)",
+                task: (ctx, task) =>
+                  execa("cp", ["-v"]).catch(status => {
+                    //console.log(status)
+                    if (status.exitCode == "64") {
+                      count_checks++;
+                    } else {
+                      ctx.curl = false;
+                      task.skip("cp (copy utility) not available");
+                      throw new Error("cp (copy utility) not available");
                     }
                   })
-                  .catch(() => {
-                    ctx.curl = false;
-                    task.skip("cURL not available");
-                    throw new Error("cURL not available");
-                  })
-            },
-            {
-              title: "Checking for cp (copy utility)",
-              task: (ctx, task) =>
-                execa("cp", ["-v"]).catch(status => {
-                  //console.log(status)
-                  if (status.exitCode == "64") {
-                    count_checks++;
-                  } else {
-                    ctx.curl = false;
-                    task.skip("cp (copy utility) not available");
-                    throw new Error("cp (copy utility) not available");
-                  }
-                })
-            }
-          ],
-          { concurrent: false }
-        );
+              }
+            ],
+            { concurrent: false }
+          );
+        }
       }
-    }
-  ]);
+    ]);
+  }
+
+  if (options.modulloOS == "win32") {
+    console.log("win");
+
+    modulloRequirement = new Listr([
+      {
+        title: "Node & NPM",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking Node",
+                task: (ctx, task) =>
+                  execa("node", ["-v"])
+                    .then(result => {
+                      //command: 'node -v',exitCode: 0,stdout: 'v12.16.1',
+                      //stderr: '', all: undefined, failed: false, timedOut: false, isCanceled: false, killed: false
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Node not available, visit https://nodejs.org/ to install"
+                        );
+                        throw new Error(
+                          "NPM not available, visit https://nodejs.org/ to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.node = false;
+                      task.skip(
+                        "Node not available, visit https://nodejs.org/ to install"
+                      );
+                      throw new Error(
+                        "NPM not available, visit https://nodejs.org/ to install"
+                      );
+                    })
+              },
+              {
+                title: "Checking for NPM",
+                task: (ctx, task) =>
+                  execa("npm", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Node not available, visit https://nodejs.org/ to install"
+                        );
+                        throw new Error(
+                          "NPM not available, visit https://nodejs.org/ to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.npm = false;
+                      task.skip(
+                        "NPM not available, visit https://nodejs.org/ to install"
+                      );
+                      throw new Error(
+                        "NPM not available, visit https://nodejs.org/ to install"
+                      );
+                    })
+              }
+            ],
+            { concurrent: false }
+          );
+        }
+      },
+      {
+        title: "Docker",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking for Docker",
+                task: (ctx, task) =>
+                  execa("docker", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Docker not available, https://www.docker.com/get-started to install"
+                        );
+                        throw new Error(
+                          "Docker not available, https://www.docker.com/get-started to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.docker = false;
+                      task.skip(
+                        "Docker not available, https://www.docker.com/get-started to install"
+                      );
+                      throw new Error(
+                        "Docker not available, https://www.docker.com/get-started to install"
+                      );
+                    })
+              },
+              {
+                title: "Checking for Docker Compose",
+                task: (ctx, task) =>
+                  execa("docker-compose", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Docker not available, https://www.docker.com/get-started to install"
+                        );
+                        throw new Error(
+                          "Docker not available, https://www.docker.com/get-started to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.docker_compose = false;
+                      task.skip(
+                        "Docker not available, https://www.docker.com/get-started to install"
+                      );
+                      throw new Error(
+                        "Docker not available, https://www.docker.com/get-started to install"
+                      );
+                    })
+              }
+            ],
+            { concurrent: false }
+          );
+        }
+      },
+      {
+        title: "Package Manager",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking for Chocolatey",
+                task: (ctx, task) =>
+                  execa("choco", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Chocolatey not available, https://chocolatey.org/install to install"
+                        );
+                        throw new Error(
+                          "Chocolatey not available, https://chocolatey.org/install to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.docker = false;
+                      task.skip(
+                        "Chocolatey not available, https://chocolatey.org/install to install"
+                      );
+                      throw new Error(
+                        "Chocolatey not available, https://chocolatey.org/install to install"
+                      );
+                    })
+              }
+            ],
+            { concurrent: false }
+          );
+        }
+      },
+      {
+        title: "Utilities",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking for UnZip",
+                task: (ctx, task) =>
+                  execa("unzip", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes("by Info-ZIP") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip("UnZip not available");
+                        throw new Error("UnZip not available");
+                      }
+                    })
+                    .catch(() => {
+                      ctx.unzip = false;
+                      task.skip("UnZip not available");
+                      throw new Error("UnZip not available");
+                    })
+              },
+              {
+                title: "Checking for cURL",
+                task: (ctx, task) =>
+                  execa("curl", ["--version"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip("cURL not available");
+                        throw new Error("cURL not available");
+                      }
+                    })
+                    .catch(() => {
+                      ctx.curl = false;
+                      task.skip("cURL not available");
+                      throw new Error("cURL not available");
+                    })
+              },
+              {
+                title: "Checking for cp (copy utility)",
+                task: (ctx, task) =>
+                  execa("cp", ["-v"]).catch(status => {
+                    //console.log(status)
+                    if (status.exitCode == "64") {
+                      count_checks++;
+                    } else {
+                      ctx.curl = false;
+                      task.skip("cp (copy utility) not available");
+                      throw new Error("cp (copy utility) not available");
+                    }
+                  })
+              }
+            ],
+            { concurrent: false }
+          );
+        }
+      }
+    ]);
+  }
 
   await modulloRequirement
     .run()
