@@ -22,7 +22,7 @@ async function install(options, software_slug, software_name) {
   if (available_software.includes(software_slug)) {
     //proceed with installation
     let installer_prefix =
-      params.installer.data[current_platform].installer_prefix;
+      params.installer.data[current_platform].install_prefix;
 
     let installCommand = `${installer_prefix} ${software_slug}`;
     await utilities.cliSpawnCommand(

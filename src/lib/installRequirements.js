@@ -396,20 +396,20 @@ async function modulloRequirements(options) {
                         count_checks++;
                       } else {
                         task.skip(
-                          "Docker not available, https://www.docker.com/get-started to install1 || docker-desktop,Docker Desktop for Windows"
+                          "Docker not available, https://www.docker.com/get-started to install"
                         );
                         throw new Error(
-                          `Docker not available, https://www.docker.com/get-started to install2 || docker-desktop,Docker Desktop for Windows`
+                          `Docker not available, https://www.docker.com/get-started to install`
                         );
                       }
                     })
                     .catch(() => {
                       ctx.docker = false;
                       task.skip(
-                        "Docker not available, https://www.docker.com/get-started to install3 || docker-desktop,Docker Desktop for Windows"
+                        "Docker not available, https://www.docker.com/get-started to install"
                       );
                       throw new Error(
-                        "Docker not available, https://www.docker.com/get-started to install4 || docker-desktop,Docker Desktop for Windows"
+                        "Docker not available, https://www.docker.com/get-started to install || docker-desktop,Docker Desktop for Windows"
                       );
                     })
               },
@@ -576,6 +576,7 @@ async function modulloRequirements(options) {
       console.log("\n");
       if (install_software) {
         installer.install(options, install_data[0], install_data[1]);
+        process.exit(1);
       } else {
         process.exit(1);
       }

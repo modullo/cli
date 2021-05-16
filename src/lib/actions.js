@@ -46,7 +46,7 @@ const repository = require(path.join(
 
 clear();
 console.log(
-  chalk.blue(
+  chalk.blueBright(
     figlet.textSync(params.general.title, { horizontalLayout: "full" })
   )
 );
