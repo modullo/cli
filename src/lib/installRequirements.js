@@ -396,20 +396,20 @@ async function modulloRequirements(options) {
                         count_checks++;
                       } else {
                         task.skip(
-                          "Docker not available, https://www.docker.com/get-started to install"
+                          "Docker not available, https://www.docker.com/get-started to install1 || docker-desktop,Docker Desktop for Windows"
                         );
                         throw new Error(
-                          `Docker not available, https://www.docker.com/get-started to install || docker-desktop,Docker Desktop for Windows`
+                          `Docker not available, https://www.docker.com/get-started to install2 || docker-desktop,Docker Desktop for Windows`
                         );
                       }
                     })
                     .catch(() => {
                       ctx.docker = false;
                       task.skip(
-                        "Docker not available, https://www.docker.com/get-started to install"
+                        "Docker not available, https://www.docker.com/get-started to install3 || docker-desktop,Docker Desktop for Windows"
                       );
                       throw new Error(
-                        "Docker not available, https://www.docker.com/get-started to install"
+                        "Docker not available, https://www.docker.com/get-started to install4 || docker-desktop,Docker Desktop for Windows"
                       );
                     })
               },
@@ -553,9 +553,8 @@ async function modulloRequirements(options) {
       }
 
       //inspect error if it contains a prompt to install required software
-      if (err.includes("||")) {
-        let errs = err.split("||");
-
+      if (Str(err).contains("||")) {
+        let errs = Str(err).split("||");
         if (options.debugMode) {
           console.log(
             "%s Install String: " + errs[1],
