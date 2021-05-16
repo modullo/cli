@@ -20,9 +20,9 @@ var params = {
   installer: {
     available_os: ["win32", "darwin"],
     data: {
-      win32: {
+      darwin: {
         available_software: ["app_name"],
-        install_prefix: "choco install ",
+        install_prefix: "brew install ",
         data: {
           app_name: {
             message_success: "success",
@@ -30,11 +30,11 @@ var params = {
           }
         }
       },
-      darwin: {
-        available_software: ["app_name"],
-        install_prefix: "brew install ",
+      win32: {
+        available_software: ["docker-desktop"],
+        install_prefix: "choco install ",
         data: {
-          app_name: {
+          "docker-desktop": {
             message_success: "success",
             message_error: "error"
           }

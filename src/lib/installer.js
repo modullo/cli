@@ -39,7 +39,26 @@ async function install(options, software_slug, software_name) {
         catch: false,
         catchStrings: ["error"]
       },
-      callback
+      async function(installResult) {
+        if (installResult) {
+          console.log(
+            `%s Successfully Install`,
+            chalk.green.bold(`Modullo Installer:`)
+          );
+          console.log(
+            `%s Re-run your original command again`,
+            chalk.green.bold(`Modullo Installer:`)
+          );
+          process.exit(1);
+        } else {
+          console.log(
+            `%s Error Installing software`,
+            chalk.red.bold(`Modullo Installer:`)
+          );
+          status.stop();
+          process.exit(1);
+        }
+      }
     );
   } else {
     console.log("\n");

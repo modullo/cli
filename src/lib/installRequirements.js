@@ -6,6 +6,8 @@ const CLI = require("clui");
 const Spinner = CLI.Spinner;
 const execa = require("execa");
 const chalk = require("chalk");
+const installer = require(path.join(__dirname, "./installer.js"));
+const Str = require("@supercharge/strings");
 
 async function modulloRequirements(options) {
   const status = new Spinner("Checking for Requirements...");
@@ -16,13 +18,9 @@ async function modulloRequirements(options) {
 
   console.log("\n");
 
-  console.log(options.modulloOS);
-
   let modulloRequirement;
 
   if (options.modulloOS == "darwin") {
-    console.log("mac");
-
     modulloRequirement = new Listr([
       {
         title: "Node & NPM",
@@ -95,6 +93,45 @@ async function modulloRequirements(options) {
         }
       },
       {
+        title: "Package Manager",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking for Homebrew",
+                task: (ctx, task) =>
+                  execa("brew", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes("Homebrew/homebrew-core") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Homebrew not available, https://brew.sh/ to install"
+                        );
+                        throw new Error(
+                          "Homebrew not available, https://brew.sh/ to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.docker = false;
+                      task.skip(
+                        "Homebrew not available, https://brew.sh/ to install"
+                      );
+                      throw new Error(
+                        "Homebrew not available, https://brew.sh/ to install"
+                      );
+                    })
+              }
+            ],
+            { concurrent: false }
+          );
+        }
+      },
+      {
         title: "Docker",
         task: () => {
           return new Listr(
@@ -114,7 +151,7 @@ async function modulloRequirements(options) {
                           "Docker not available, https://www.docker.com/get-started to install"
                         );
                         throw new Error(
-                          "Docker not available, https://www.docker.com/get-started to install"
+                          `Docker not available, https://www.docker.com/get-started to install`
                         );
                       }
                     })
@@ -154,45 +191,6 @@ async function modulloRequirements(options) {
                       );
                       throw new Error(
                         "Docker not available, https://www.docker.com/get-started to install"
-                      );
-                    })
-              }
-            ],
-            { concurrent: false }
-          );
-        }
-      },
-      {
-        title: "Package Manager",
-        task: () => {
-          return new Listr(
-            [
-              {
-                title: "Checking for Homebrew",
-                task: (ctx, task) =>
-                  execa("brew", ["-v"])
-                    .then(result => {
-                      if (
-                        result.stdout.includes("Homebrew/homebrew-core") &&
-                        !result.stdout.includes("command not found")
-                      ) {
-                        count_checks++;
-                      } else {
-                        task.skip(
-                          "Homebrew not available, https://brew.sh/ to install"
-                        );
-                        throw new Error(
-                          "Homebrew not available, https://brew.sh/ to install"
-                        );
-                      }
-                    })
-                    .catch(() => {
-                      ctx.docker = false;
-                      task.skip(
-                        "Homebrew not available, https://brew.sh/ to install"
-                      );
-                      throw new Error(
-                        "Homebrew not available, https://brew.sh/ to install"
                       );
                     })
               }
@@ -271,8 +269,6 @@ async function modulloRequirements(options) {
   }
 
   if (options.modulloOS == "win32") {
-    console.log("win");
-
     modulloRequirement = new Listr([
       {
         title: "Node & NPM",
@@ -345,6 +341,45 @@ async function modulloRequirements(options) {
         }
       },
       {
+        title: "Package Manager",
+        task: () => {
+          return new Listr(
+            [
+              {
+                title: "Checking for Chocolatey",
+                task: (ctx, task) =>
+                  execa("choco", ["-v"])
+                    .then(result => {
+                      if (
+                        result.stdout.includes(".") &&
+                        !result.stdout.includes("command not found")
+                      ) {
+                        count_checks++;
+                      } else {
+                        task.skip(
+                          "Chocolatey not available, https://chocolatey.org/install to install"
+                        );
+                        throw new Error(
+                          "Chocolatey not available, https://chocolatey.org/install to install"
+                        );
+                      }
+                    })
+                    .catch(() => {
+                      ctx.docker = false;
+                      task.skip(
+                        "Chocolatey not available, https://chocolatey.org/install to install"
+                      );
+                      throw new Error(
+                        "Chocolatey not available, https://chocolatey.org/install to install"
+                      );
+                    })
+              }
+            ],
+            { concurrent: false }
+          );
+        }
+      },
+      {
         title: "Docker",
         task: () => {
           return new Listr(
@@ -364,7 +399,7 @@ async function modulloRequirements(options) {
                           "Docker not available, https://www.docker.com/get-started to install"
                         );
                         throw new Error(
-                          "Docker not available, https://www.docker.com/get-started to install"
+                          `Docker not available, https://www.docker.com/get-started to install || docker-desktop,Docker Desktop for Windows`
                         );
                       }
                     })
@@ -404,45 +439,6 @@ async function modulloRequirements(options) {
                       );
                       throw new Error(
                         "Docker not available, https://www.docker.com/get-started to install"
-                      );
-                    })
-              }
-            ],
-            { concurrent: false }
-          );
-        }
-      },
-      {
-        title: "Package Manager",
-        task: () => {
-          return new Listr(
-            [
-              {
-                title: "Checking for Chocolatey",
-                task: (ctx, task) =>
-                  execa("choco", ["-v"])
-                    .then(result => {
-                      if (
-                        result.stdout.includes(".") &&
-                        !result.stdout.includes("command not found")
-                      ) {
-                        count_checks++;
-                      } else {
-                        task.skip(
-                          "Chocolatey not available, https://chocolatey.org/install to install"
-                        );
-                        throw new Error(
-                          "Chocolatey not available, https://chocolatey.org/install to install"
-                        );
-                      }
-                    })
-                    .catch(() => {
-                      ctx.docker = false;
-                      task.skip(
-                        "Chocolatey not available, https://chocolatey.org/install to install"
-                      );
-                      throw new Error(
-                        "Chocolatey not available, https://chocolatey.org/install to install"
                       );
                     })
               }
@@ -545,12 +541,45 @@ async function modulloRequirements(options) {
     })
     .catch(err => {
       console.log("\n");
+
+      let error_message = err;
+
+      let install_software = false;
+
+      let install_data = [];
+
+      if (options.debugMode) {
+        console.log("%s Error String: " + err, chalk.yellow.bold("DEBUG: "));
+      }
+
+      //inspect error if it contains a prompt to install required software
+      if (err.includes("||")) {
+        let errs = err.split("||");
+
+        if (options.debugMode) {
+          console.log(
+            "%s Install String: " + errs[1],
+            chalk.yellow.bold("DEBUG: ")
+          );
+        }
+
+        error_message = errs[0];
+        install_software = true;
+        install_data = Str(errs[1])
+          .trim()
+          .split(",");
+      }
+
       console.error(
-        "%s Framework Requirements failed: " + err,
+        "%s Framework Requirements failed: " + error_message,
         chalk.red.bold("Error")
       );
       console.log("\n");
-      process.exit(1);
+      if (install_software) {
+        installer.install(options, install_data[0], install_data[1]);
+      } else {
+        process.exit(1);
+      }
     });
 }
 
