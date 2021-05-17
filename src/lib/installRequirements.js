@@ -13,7 +13,7 @@ async function modulloRequirements(options) {
   const status = new Spinner("Checking for Requirements...");
   status.start();
 
-  var count_requirements = 7;
+  var count_requirements = 8;
   var count_checks = 0;
 
   console.log("\n");

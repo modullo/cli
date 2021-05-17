@@ -12,6 +12,8 @@ const chalk = require("chalk");
 const spawn = require("child_process").spawn;
 const Str = require("@supercharge/strings");
 var _ = require("lodash/core");
+const utilities = require(path.join(__dirname, "./utilities.js"));
+
 const installRequirements = require(path.join(
   __dirname,
   "./installRequirements.js"
@@ -40,6 +42,7 @@ async function cli(args) {
         "--auto": Boolean,
         "--command_path": String,
         "--env_path": String,
+        "--dev": Boolean,
         "--debug": Boolean,
         "--arguments": Boolean,
         "--interactive": Boolean,
@@ -80,6 +83,7 @@ async function cli(args) {
       //console.log(args)
 
       let baseOptions = {
+        packageDirectory: "",
         modulloOS: "",
         modulloOSFull: "",
         targetDirectory: "",
@@ -89,10 +93,11 @@ async function cli(args) {
         skipInputs: args["--auto"] || false,
         commandPath: args["--command_path"],
         envPath: args["--env_path"],
+        devMode: args["--dev"] || false,
+        debugMode: args["--debug"] || false,
         installInteractive: args["--interactive"] || false,
         installArguments: args["--arguments"] || true,
         defaultAction: rawArgs[2] || "help",
-        debugMode: args["--debug"] || false,
         databasePassword: Str.random(18),
         modulloAppID: Str.random(5),
         createProject: args["--create-project"] || false,
@@ -171,6 +176,10 @@ async function cli(args) {
       console.log("\n");
     }
 
+    //get package directory
+    options.packageDirectory = await utilities.packageRootFolder(options);
+
+    // check for  standard cli requirements
     if (
       !options.argEmail ||
       !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(

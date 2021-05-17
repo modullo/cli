@@ -73,6 +73,15 @@ async function initModulloCLI(options) {
     `You can exit the ${params.general.title} CLI at any time by hitting CTRL + C \n`
   );
 
+  //Dev Mode allows developers to display extract critical info and prevent running the full CLI cycle
+  if (options.devMode) {
+    console.log(
+      "%s Package Directory: " + options.packageDirectory,
+      chalk.yellow.bold("DEBUG: ")
+    );
+    process.exit(1);
+  }
+
   const fullPathName = __dirname + "/main.js";
   const templateDir = path.resolve(
     fullPathName.substr(fullPathName.indexOf("/")),

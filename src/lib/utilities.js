@@ -18,6 +18,16 @@ const Str = require("@supercharge/strings");
 const params = require(path.join(__dirname, "./params.js"));
 const yaml = require("js-yaml");
 var ini = require("ini");
+const pkgDir = require("pkg-dir");
+
+async function packageRootFolder(options = null) {
+  const rootDir = await pkgDir(__dirname);
+
+  console.log(rootDir);
+
+  return rootDir;
+}
+exports.packageRootFolder = packageRootFolder;
 
 async function installTemplateFiles(options) {
   if (options.debugMode) {
@@ -27,6 +37,10 @@ async function installTemplateFiles(options) {
     );
     console.log(
       "%s Template Directory: " + options.templateDirectory,
+      chalk.yellow.bold("DEBUG: ")
+    );
+    console.log(
+      "%s Package Directory: " + options.packageDirectory,
       chalk.yellow.bold("DEBUG: ")
     );
   }
