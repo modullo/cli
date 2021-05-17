@@ -44,27 +44,9 @@ async function installTemplateFiles(options) {
       chalk.yellow.bold("DEBUG: ")
     );
   }
-  await copy(
-    options.templateDirectory,
-    `${options.targetDirectory}`,
-    {
-      clobber: false
-    },
-    function(err) {
-      console.log("reporting copy");
-      if (err) {
-        console.log(err);
-        process.exit(1);
-      } else {
-        console.log(
-          "%s " +
-            options.template.toUpperCase() +
-            " Version Template Files Installed",
-          chalk.green.bold("Success")
-        );
-      }
-    }
-  );
+  await copy(options.templateDirectory, `${options.targetDirectory}`, {
+    clobber: false
+  });
 }
 
 exports.installTemplateFiles = installTemplateFiles;
