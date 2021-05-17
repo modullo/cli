@@ -32,7 +32,7 @@ exports.packageRootFolder = packageRootFolder;
 async function installTemplateFiles(options) {
   if (options.debugMode) {
     console.log(
-      "%s Target Directory: " + options.targetDirectory,
+      "%s Package Directory: " + options.packageDirectory,
       chalk.yellow.bold("DEBUG: ")
     );
     console.log(
@@ -40,7 +40,7 @@ async function installTemplateFiles(options) {
       chalk.yellow.bold("DEBUG: ")
     );
     console.log(
-      "%s Package Directory: " + options.packageDirectory,
+      "%s Target Directory: " + options.targetDirectory,
       chalk.yellow.bold("DEBUG: ")
     );
   }

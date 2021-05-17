@@ -81,7 +81,12 @@ async function initModulloCLI(options) {
   );
   options.templateDirectory = templateDir;
 
-  options.templateDirectory = path.join(options.packageDirectory, `templates`);
+  options.templateDirectory = path.join(
+    options.packageDirectory,
+    `src`,
+    `templates`,
+    options.template.toLowerCase()
+  );
 
   //Dev Mode allows developers to display extract critical info and prevent running the full CLI cycle
   if (options.devMode) {
@@ -90,11 +95,11 @@ async function initModulloCLI(options) {
       chalk.yellow.bold("DEV: ")
     );
     console.log(
-      "%s Target Directory: " + options.targetDirectory,
+      "%s Template Directory: " + options.templateDirectory,
       chalk.yellow.bold("DEV: ")
     );
     console.log(
-      "%s Template Directory: " + options.templateDirectory,
+      "%s Target Directory: " + options.targetDirectory,
       chalk.yellow.bold("DEV: ")
     );
     process.exit(1);
