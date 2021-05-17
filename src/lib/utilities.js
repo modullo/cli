@@ -51,15 +51,18 @@ async function installTemplateFiles(options) {
       clobber: false
     },
     function(err) {
+      console.log("reporting copy");
       if (err) {
-        return console.error(err);
+        console.log(err);
+        process.exit(1);
+      } else {
+        console.log(
+          "%s " +
+            options.template.toUpperCase() +
+            " Version Template Files Installed",
+          chalk.green.bold("Success")
+        );
       }
-      console.log(
-        "%s " +
-          options.template.toUpperCase() +
-          " Version Template Files Installed",
-        chalk.green.bold("Success")
-      );
     }
   );
 }
