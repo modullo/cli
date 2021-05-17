@@ -497,16 +497,20 @@ async function modulloRequirements(options) {
               {
                 title: "Checking for cp (copy utility)",
                 task: (ctx, task) =>
-                  execa("cp", ["-v"]).catch(status => {
-                    //console.log(status)
-                    if (status.exitCode == "64") {
-                      count_checks++;
-                    } else {
+                  execa("cp", ["--help"])
+                    .then(result => {
+                      if (result.stdout.includes("Usage")) {
+                        count_checks++;
+                      } else {
+                        task.skip("cp (copy utility) not available");
+                        throw new Error("cp (copy utility) not available");
+                      }
+                    })
+                    .catch(() => {
                       ctx.curl = false;
                       task.skip("cp (copy utility) not available");
                       throw new Error("cp (copy utility) not available");
-                    }
-                  })
+                    })
               }
             ],
             { concurrent: false }
