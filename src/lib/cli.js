@@ -227,9 +227,14 @@ async function cli(args) {
         ? options.createInfrastructure
         : options.installFramework;
 
-    options.targetDirectory =
-      process.cwd() +
-      `/${params.general.create_output_folder}-${framework_infrastructure}-${options.deployPlatform}`;
+    let project_folder_name = `${params.general.create_output_folder}-${framework_infrastructure}-${options.deployPlatform}`;
+
+    //options.targetDirectory = process.cwd() + `/${params.general.create_output_folder}-${framework_infrastructure}-${options.deployPlatform}`;
+
+    options.targetDirectory = path.join(
+      process.cwd(),
+      `${project_folder_name}`
+    );
 
     options.template =
       options.installFramework == "modullo" ? "modullo" : "create";

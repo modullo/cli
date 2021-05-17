@@ -73,15 +73,6 @@ async function initModulloCLI(options) {
     `You can exit the ${params.general.title} CLI at any time by hitting CTRL + C \n`
   );
 
-  //Dev Mode allows developers to display extract critical info and prevent running the full CLI cycle
-  if (options.devMode) {
-    console.log(
-      "%s Package Directory: " + options.packageDirectory,
-      chalk.yellow.bold("DEBUG: ")
-    );
-    process.exit(1);
-  }
-
   const fullPathName = __dirname + "/main.js";
   const templateDir = path.resolve(
     fullPathName.substr(fullPathName.indexOf("/")),
@@ -89,6 +80,25 @@ async function initModulloCLI(options) {
     options.template.toLowerCase()
   );
   options.templateDirectory = templateDir;
+
+  options.templateDirectory = path.join(options.packageDirectory, `templates`);
+
+  //Dev Mode allows developers to display extract critical info and prevent running the full CLI cycle
+  if (options.devMode) {
+    console.log(
+      "%s Package Directory: " + options.packageDirectory,
+      chalk.yellow.bold("DEV: ")
+    );
+    console.log(
+      "%s Target Directory: " + options.targetDirectory,
+      chalk.yellow.bold("DEV: ")
+    );
+    console.log(
+      "%s Template Directory: " + options.templateDirectory,
+      chalk.yellow.bold("DEV: ")
+    );
+    process.exit(1);
+  }
 
   await utilities.installTemplateFiles(options);
 
