@@ -73,13 +73,13 @@ async function initModulloCLI(options) {
     `You can exit the ${params.general.title} CLI at any time by hitting CTRL + C \n`
   );
 
-  const fullPathName = __dirname + "/main.js";
-  const templateDir = path.resolve(
-    fullPathName.substr(fullPathName.indexOf("/")),
-    "../../templates",
-    options.template.toLowerCase()
-  );
-  options.templateDirectory = templateDir;
+  // const fullPathName = __dirname + "/main.js";
+  // const templateDir = path.resolve(
+  //   fullPathName.substr(fullPathName.indexOf("/")),
+  //   "../../templates",
+  //   options.template.toLowerCase()
+  // );
+  // options.templateDirectory = templateDir;
 
   options.templateDirectory = path.join(
     options.packageDirectory,
@@ -106,13 +106,6 @@ async function initModulloCLI(options) {
   }
 
   await utilities.installTemplateFiles(options);
-
-  console.log(
-    "%s " +
-      options.template.toUpperCase() +
-      " Version Template Files Installed",
-    chalk.green.bold("Success")
-  );
 
   options.port_increment =
     options.template.toLowerCase() == "production" ? 0 : 1000; //separate production & development ports
