@@ -7,8 +7,8 @@ const envfile = require("envfile");
 const util = require("util");
 exports.util = util;
 const chalk = require("chalk");
-const clear = require("clear");
-const figlet = require("figlet");
+// const clear = require("clear");
+// const figlet = require("figlet");
 const spawn = require("child_process").spawn;
 const CLI = require("clui");
 const Spinner = CLI.Spinner;
@@ -44,43 +44,7 @@ const repository = require(path.join(
   "../infrastructure/repository/repository.js"
 ));
 
-clear();
-console.log(
-  chalk.blueBright(
-    figlet.textSync(params.general.title, { horizontalLayout: "full" })
-  )
-);
-
-function installerHelp() {
-  console.log(chalk.blue(`Below are the key commands you can run:`));
-  console.log(
-    chalk.green.bold("install") + ` Run the ${params.general.title} Installer`
-  );
-  console.log(
-    chalk.green.bold("load") +
-      ` Add a ${params.general.title} Module like so: ` +
-      chalk.white.italic.bold("modullo load modules-auth")
-  );
-}
-
 async function initModulloCLI(options) {
-  console.log(
-    `Welcome to the ${params.general.title_full} v` +
-      require(path.join(__dirname, "../../package.json")).version +
-      ` running on ${options.modulloOSFull}`
-  );
-  console.log(
-    `You can exit the ${params.general.title} CLI at any time by hitting CTRL + C \n`
-  );
-
-  // const fullPathName = __dirname + "/main.js";
-  // const templateDir = path.resolve(
-  //   fullPathName.substr(fullPathName.indexOf("/")),
-  //   "../../templates",
-  //   options.template.toLowerCase()
-  // );
-  // options.templateDirectory = templateDir;
-
   options.templateDirectory = path.join(
     options.packageDirectory,
     `src`,
@@ -91,17 +55,20 @@ async function initModulloCLI(options) {
   //Dev Mode allows developers to display extract critical info and prevent running the full CLI cycle
   if (options.devMode) {
     console.log(
-      "%s Package Directory: " + options.packageDirectory,
+      "%s Modullo Package Directory: " + options.packageDirectory,
       chalk.yellow.bold("DEV: ")
     );
     console.log(
-      "%s Template Directory: " + options.templateDirectory,
+      "%s Modullo Template Directory: " + options.templateDirectory,
       chalk.yellow.bold("DEV: ")
     );
     console.log(
-      "%s Target Directory: " + options.targetDirectory,
+      "%s Modullo Target Directory: " + options.targetDirectory,
       chalk.yellow.bold("DEV: ")
     );
+    console.log(`%s Modullo Options (FULL):`, chalk.yellow.bold("DEV: "));
+    console.log(options);
+    console.log("\n");
     process.exit(1);
   }
 
@@ -176,3 +143,15 @@ async function initModulloCLI(options) {
 }
 
 exports.initModulloCLI = initModulloCLI;
+
+function installerHelp() {
+  console.log(chalk.blue(`Below are the key commands you can run:`));
+  console.log(
+    chalk.green.bold("install") + ` Run the ${params.general.title} Installer`
+  );
+  console.log(
+    chalk.green.bold("load") +
+      ` Add a ${params.general.title} Module like so: ` +
+      chalk.white.italic.bold("modullo load modules-auth")
+  );
+}

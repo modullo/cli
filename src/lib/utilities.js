@@ -19,15 +19,28 @@ const params = require(path.join(__dirname, "./params.js"));
 const yaml = require("js-yaml");
 var ini = require("ini");
 const pkgDir = require("pkg-dir");
+const { R_OK } = require("constants");
 
 async function packageRootFolder(options = null) {
   const rootDir = await pkgDir(__dirname);
 
-  console.log(rootDir);
+  //console.log(rootDir);
 
   return rootDir;
 }
 exports.packageRootFolder = packageRootFolder;
+
+async function file_exists(path) {
+  try {
+    await access(path, fs.constants.R_OK);
+    return true;
+  } catch (err) {
+    //console.error(err)
+    return false;
+  }
+}
+
+exports.file_exists = file_exists;
 
 async function installTemplateFiles(options) {
   if (options.debugMode) {
@@ -819,6 +832,24 @@ async function writeYAML(options, data, output_path, callback) {
 }
 
 exports.writeYAML = writeYAML;
+
+async function readFile(options, file_type, file_path, callback) {
+  try {
+    let doc;
+    switch (file_type) {
+      case "yaml":
+        doc = yaml.load(fs.readFileSync(file_path, "utf8"));
+        break;
+    }
+    //console.log(doc);
+    callback(true, doc);
+  } catch (err) {
+    //console.error(err);
+    callback(false, null);
+  }
+}
+
+exports.readFile = readFile;
 
 async function writeFile(options, data, output_path, callback) {
   await fs.writeFile(output_path, data, "utf8", err => {

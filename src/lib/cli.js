@@ -8,6 +8,8 @@ const Listr = require("listr");
 const CLI = require("clui");
 const Spinner = CLI.Spinner;
 const execa = require("execa");
+const clear = require("clear");
+const figlet = require("figlet");
 const chalk = require("chalk");
 const spawn = require("child_process").spawn;
 const Str = require("@supercharge/strings");
@@ -31,8 +33,35 @@ const infrastructureRequirements = require(path.join(
   "./infrastructureRequirements.js"
 ));
 
+clear();
+console.log(
+  chalk.blueBright(
+    figlet.textSync(params.general.title, { horizontalLayout: "full" })
+  )
+);
+
+let platOS = process.platform;
+let platOSFull = `Unsupported Platform`;
+switch (platOS) {
+  case "win32":
+    platOSFull = "Windows OS";
+    break;
+  case "darwin":
+    platOSFull = "Mac OS";
+    break;
+}
+console.log(
+  `Welcome to the ${params.general.title_full} v` +
+    require(path.join(__dirname, "../../package.json")).version +
+    ` running on ${platOSFull}`
+);
+console.log(
+  `You can exit the ${params.general.title} CLI at any time by hitting CTRL + C \n`
+);
+
 async function cli(args) {
   let options = parseArgumentsIntoOptions(args);
+  options = await assertModulloConfig(options);
   options = await promptForMissingOptions(options);
 
   function parseArgumentsIntoOptions(rawArgs) {
@@ -54,6 +83,8 @@ async function cli(args) {
         "--framework": String,
         "--infrastructure": String,
         "--premium": Boolean,
+        "--multi-app": Boolean,
+        "--multi-container": Boolean,
         "--app": String,
         "--keypair": String,
         "--firstname": String,
@@ -63,9 +94,7 @@ async function cli(args) {
         "--domain": String,
         "--dns": String,
         "--dns_resolver": String,
-        "--azure-region": String,
-        "--registry-name": String,
-        "--repository-name": String
+        "--azure-region": String
       };
 
       //add additional baseArgs from infrastructure, platform or framework requirements
@@ -76,11 +105,7 @@ async function cli(args) {
         ...infrastructureRequirements.getArgs()
       };
 
-      //console.log(finalArgs)
-
       const args = arg(finalArgs, { argv: rawArgs.slice(2) });
-
-      //console.log(args)
 
       let baseOptions = {
         packageDirectory: "",
@@ -108,6 +133,8 @@ async function cli(args) {
         createInfrastructure: args["--infrastructure"] || "",
         deployPlatform: args["--platform"] || "",
         deployPremium: args["--premium"] || false,
+        multiApp: args["--multi-app"] || false,
+        multiContainer: args["--multi-container"] || false,
         appName: args["--app"] || "",
         deployKeyPair: args["--keypair"] || "none",
         deployAWSInstanceType: args["--aws-instance-type"] || "t2.micro",
@@ -119,12 +146,8 @@ async function cli(args) {
         argDomain: args["--domain"],
         argDNS: args["--dns"] || "localhost",
         argDNSResolver: args["--dns_resolver"] || "valet",
-        registryName: args["--registry-name"] || "",
-        deployAzureRegion: args["--azure-region"] || "ukwest",
-        repositoryName: args["--repository-name"] || ""
+        deployAzureRegion: args["--azure-region"] || "ukwest"
       };
-
-      //console.log(baseOptions)
 
       //add additional baseOptions from infrastructure, platform or framework requirements
       return {
@@ -146,29 +169,110 @@ async function cli(args) {
     }
   }
 
+  async function assertModulloConfig(options) {
+    let modulloConfigPath = path.join(process.cwd(), `modullo.yaml`);
+
+    let modulloConfifExists = await utilities.file_exists(modulloConfigPath);
+
+    //check if file exists
+
+    if (modulloConfifExists) {
+      console.log(
+        `%s Modullo Configuration FOUND. Adopting...`,
+        chalk.blueBright.bold("CLI:")
+      );
+
+      //loadup
+      let configs = await utilities.readFile(
+        options,
+        "yaml",
+        modulloConfigPath,
+        async function(readResult, readFile) {
+          if (readResult) {
+            console.log(
+              `%s Modullo Configuration READ.`,
+              chalk.blueBright.bold("CLI:")
+            );
+
+            let modulloConfig = readFile;
+
+            // lets process BASE assignments (use config if not  exist in options already)
+            options.installFramework = Str(
+              options.installFramework
+            ).isNotEmpty()
+              ? options.installFramework
+              : modulloConfig.base.framework;
+            options.createInfrastructure = Str(
+              options.createInfrastructure
+            ).isNotEmpty()
+              ? options.createInfrastructure
+              : modulloConfig.base.infrastructure;
+            options.deployPlatform = Str(options.deployPlatform).isNotEmpty()
+              ? options.deployPlatform
+              : modulloConfig.base.platform;
+
+            options.multiApp = Str(options.multiApp).isNotEmpty()
+              ? options.multiApp
+              : modulloConfig["multi-app"];
+            options.multiContainer = Str(options.multiContainer).isNotEmpty()
+              ? options.multiContainer
+              : modulloConfig["multi-containner"];
+          }
+        }
+      );
+
+      //or leave?
+    } else {
+      console.log(
+        `%s Modullo Configuration NOT FOUND. Writing...`,
+        chalk.blueBright.bold("CLI:")
+      );
+
+      //define config structure
+      let modulloConfigYAML = {
+        version: 1,
+        base: {
+          framework: options.installFramework || "modullo",
+          platform: options.deployPlatform || "local",
+          infrastructure: options.createInfrastructure || "vm"
+        },
+        parameters: {
+          framework: {
+            app: "ModulloApp"
+          }
+        },
+        "multi-app": false,
+        "multi-container": false
+      };
+
+      await utilities.writeYAML(
+        options,
+        modulloConfigYAML,
+        modulloConfigPath,
+        async function(result) {
+          if (result) {
+            console.log(
+              `%s Modullo Configuration successfully written \n`,
+              chalk.blueBright.bold("CLI: ")
+            );
+          } else {
+            //
+          }
+        }
+      );
+    }
+
+    //write file if necessary
+
+    return options;
+  }
+
   async function promptForMissingOptions(options) {
     const defaultTemplate = "production";
-    // if (options.skipInputs) {
-    //   return {
-    //     ...options,
-    //     template: options.template || defaultTemplate
-    //   };
-    // }
-
-    //let optionsArguments = [];
-    //options.missingArguments = {};
 
     //determine OS
-    options.modulloOS = process.platform;
-
-    switch (options.modulloOS) {
-      case "win32":
-        options.modulloOSFull = "Windows OS";
-        break;
-      case "darwin":
-        options.modulloOSFull = "Mac OS";
-        break;
-    }
+    options.modulloOS = platOS;
+    options.modulloOSFull = platOSFull;
 
     if (!params.installer.available_os.includes(options.modulloOS)) {
       console.log("\n");

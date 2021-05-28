@@ -15,6 +15,8 @@ const repository = require(path.join(
 
 function getArgs() {
   return {
+    "--registry-name": String,
+    "--repository-name": String,
     "--repository-description": String,
     "--repository-visibility": String
   };
@@ -23,6 +25,8 @@ exports.getArgs = getArgs;
 
 function getOptions(args) {
   return {
+    registryName: args["--registry-name"] || "",
+    repositoryName: args["--repository-name"] || "",
     repositoryDescription:
       args["--repository-description"] || "A New Repository",
     repositoryVisibility: args["--repository-visibility"] || "private"
