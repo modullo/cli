@@ -61,6 +61,7 @@ console.log(
 
 async function cli(args) {
   let options = parseArgumentsIntoOptions(args);
+  options = await assertGlobalConfig(options, "check");
   options = await assertModulloConfig(options);
   options = await promptForMissingOptions(options);
 
@@ -87,10 +88,7 @@ async function cli(args) {
         "--multi-container": Boolean,
         "--app": String,
         "--keypair": String,
-        "--firstname": String,
-        "--lastname": String,
         "--email": String,
-        "--password": String,
         "--domain": String,
         "--dns": String,
         "--dns_resolver": String,
@@ -139,9 +137,6 @@ async function cli(args) {
         deployKeyPair: args["--keypair"] || "none",
         deployAWSInstanceType: args["--aws-instance-type"] || "t2.micro",
         deployAWSInstanceSize: args["--aws-instance-size"] || 1,
-        argFirstname: args["--firstname"],
-        argLastname: args["--lastname"],
-        argPassword: args["--password"],
         argFeatures: args["--features"] || "all",
         argDomain: args["--domain"],
         argDNS: args["--dns"] || "localhost",
@@ -169,6 +164,98 @@ async function cli(args) {
     }
   }
 
+  async function assertGlobalConfig(options, action_type) {
+    let homeDir = await utilities.homeDirectory();
+    let globalConfigPath = path.join(homeDir, `.modullo`);
+
+    let globalConfigExists = await utilities.file_exists(globalConfigPath);
+
+    switch (action_type) {
+      case "check":
+        //check if file exists
+        if (globalConfigExists) {
+          console.log(
+            `%s Modullo GLOBAL Configuration FOUND. Reading...`,
+            chalk.blueBright.bold("CLI:")
+          );
+
+          //loadup
+          let configs = await utilities.readFile(
+            options,
+            "yaml",
+            globalConfigPath,
+            async function(readResult, readFile) {
+              if (readResult) {
+                console.log(
+                  `%s Modullo GLOBAL Configuration READ.`,
+                  chalk.blueBright.bold("CLI:")
+                );
+
+                let globalConfig = readFile;
+
+                // lets process assignments (prefer CLI argument first)
+                options.argEmail = Str(options.argEmail).isNotEmpty()
+                  ? options.argEmail
+                  : globalConfig.email;
+                options.argFirstname = Str(options.argFirstname).isNotEmpty()
+                  ? options.argFirstname
+                  : globalConfig.bio.firstname;
+                options.argLastname = Str(options.argLastname).isNotEmpty()
+                  ? options.argLastname
+                  : globalConfig.bio.lastname;
+              }
+            }
+          );
+        }
+
+        break;
+
+      case "create":
+        if (!globalConfigExists) {
+          console.log(
+            `%s GLOBAL Configuration NOT FOUND. Writing...`,
+            chalk.blueBright.bold("CLI:")
+          );
+
+          //define config structure
+          let globalConfigYAML = {
+            modullo_id: 1,
+            email: Str(options.argEmail).isNotEmpty()
+              ? options.argEmail
+              : "dev@modullo.io",
+            bio: {
+              firstname: Str(options.argFirstname).isNotEmpty()
+                ? options.argFirstname
+                : "",
+              lastname: Str(options.argLastname).isNotEmpty()
+                ? options.argLastname
+                : ""
+            }
+          };
+
+          await utilities.writeYAML(
+            options,
+            globalConfigYAML,
+            globalConfigPath,
+            async function(result) {
+              if (result) {
+                console.log(
+                  `%s Modullo Global configuration successfully written \n`,
+                  chalk.blueBright.bold("CLI: ")
+                );
+              } else {
+                //
+              }
+            }
+          );
+        }
+
+        break;
+    }
+
+    return options;
+  }
+
   async function assertModulloConfig(options) {
     let modulloConfigPath = path.join(process.cwd(), `modullo.yaml`);
 
@@ -178,7 +265,7 @@ async function cli(args) {
 
     if (modulloConfifExists) {
       console.log(
-        `%s Modullo Configuration FOUND. Adopting...`,
+        `%s Modullo APP Configuration FOUND. Reading...`,
         chalk.blueBright.bold("CLI:")
       );
 
@@ -190,7 +277,7 @@ async function cli(args) {
         async function(readResult, readFile) {
           if (readResult) {
             console.log(
-              `%s Modullo Configuration READ.`,
+              `%s Modullo APP Configuration READ.`,
               chalk.blueBright.bold("CLI:")
             );
 
@@ -202,11 +289,13 @@ async function cli(args) {
             ).isNotEmpty()
               ? options.installFramework
               : modulloConfig.base.framework;
+
             options.createInfrastructure = Str(
               options.createInfrastructure
             ).isNotEmpty()
               ? options.createInfrastructure
               : modulloConfig.base.infrastructure;
+
             options.deployPlatform = Str(options.deployPlatform).isNotEmpty()
               ? options.deployPlatform
               : modulloConfig.base.platform;
@@ -304,24 +393,26 @@ async function cli(args) {
       options.answers["agreement"] = options.argAgreeementTOS;
     }
 
-    // Validate framework, infrastructure and platform choice
-    if (
-      (!params.frameworks.list.includes(options.installFramework) &&
-        !params.infrastructure.list.includes(options.createInfrastructure)) ||
-      !params.platforms.list.includes(options.deployPlatform)
-    ) {
-      console.error(
-        "%s Please specify a valid framework / infrastructure and platform to proceed!",
-        chalk.red.bold("CLI: ")
-      );
-      console.log(
-        `You can run something like ${chalk.gray.italic.bold(
-          "modullo create --framework wordpress --platform local"
-        )} to setup Modullo on your local system OR ${chalk.gray.italic.bold(
-          "modullo create --infrastructure vm --platform aws"
-        )} to spin-up a Virtual Machine on your AWS environment\n`
-      );
-      process.exit(1);
+    // Validate framework, infrastructure and platform choice (if not in config mode)
+    if (options.defaultAction !== "config") {
+      if (
+        (!params.frameworks.list.includes(options.installFramework) &&
+          !params.infrastructure.list.includes(options.createInfrastructure)) ||
+        !params.platforms.list.includes(options.deployPlatform)
+      ) {
+        console.error(
+          "%s Please specify a valid framework / infrastructure and platform to proceed!",
+          chalk.red.bold("CLI: ")
+        );
+        console.log(
+          `You can run something like ${chalk.gray.italic.bold(
+            "modullo create --framework wordpress --platform local"
+          )} to setup Modullo on your local system OR ${chalk.gray.italic.bold(
+            "modullo create --infrastructure vm --platform aws"
+          )} to spin-up a Virtual Machine on your AWS environment\n`
+        );
+        process.exit(1);
+      }
     }
 
     let framework_infrastructure;
@@ -344,6 +435,11 @@ async function cli(args) {
       options.installFramework == "modullo" ? "modullo" : "create";
 
     switch (options.defaultAction) {
+      case "config":
+        await assertGlobalConfig(options, "create");
+
+        break;
+
       case "create":
         console.log(
           `\n` +

@@ -20,6 +20,13 @@ const yaml = require("js-yaml");
 var ini = require("ini");
 const pkgDir = require("pkg-dir");
 const { R_OK } = require("constants");
+const os = require("os");
+
+async function homeDirectory(options = null) {
+  const homeDir = os.homedir();
+  return homeDir;
+}
+exports.homeDirectory = homeDirectory;
 
 async function packageRootFolder(options = null) {
   const rootDir = await pkgDir(__dirname);

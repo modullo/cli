@@ -16,6 +16,9 @@ const software = require(path.join(
 
 function getArgs() {
   return {
+    "--firstname": String,
+    "--lastname": String,
+    "--password": String,
     "--software-package-type": String,
     "--software-package": String,
     "--app-user": String
@@ -25,6 +28,9 @@ exports.getArgs = getArgs;
 
 function getOptions(args) {
   return {
+    argFirstname: args["--firstname"],
+    argLastname: args["--lastname"],
+    argPassword: args["--password"],
     softwarePackageType: args["--software-package-type"] || "single",
     softwarePackage: args["--software-package"] || "custom",
     appUser: args["--app-user"] || "user"

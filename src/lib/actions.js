@@ -81,6 +81,10 @@ async function initModulloCLI(options) {
     options.template.toLowerCase() == "production" ? "" : "_development"; //separate production & development ports
 
   switch (options.defaultAction) {
+    case "config":
+      //do nothing
+      break;
+
     case "install":
       installModullo.installModullo(options);
       break;
