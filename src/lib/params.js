@@ -64,7 +64,7 @@ var params = {
     }
   },
   infrastructure: {
-    list: ["pipeline", "container-registry", "repository", "vm"],
+    list: ["pipeline", "container-registry", "repository", "vm", "pipeline"],
     data: {
       pipeline: {
         name: "Pipeline"
@@ -74,6 +74,12 @@ var params = {
       },
       repository: {
         name: "Code Repository"
+      },
+      vm: {
+        name: "Virtual Machine"
+      },
+      pipeline: {
+        name: "Pipeline"
       }
     }
   },

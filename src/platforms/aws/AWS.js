@@ -164,38 +164,129 @@ function deployRequirements(options, service = "") {
 
 exports.deployRequirements = deployRequirements;
 
-async function configInit(options, platform, service = null) {
+async function configInit(options, platform, service = null, callback = null) {
   const status = new Spinner(
     `Initializing AWS ${platform.toUpperCase()} Deployment...`
   );
   status.start();
   status.stop();
 
-  if (service == "pipeline") {
-    let cdkBootstrapString = `aws://${options.answers["aws-account-id"]}/${options.answers["aws-region"]}`;
-    //cdk bootstrap aws://ACCOUNT-NUMBER-1/REGION-1
-    let cdkBootstrapCommand = "cdk bootstrap";
-    await utilities.cliSpawn(
-      options,
-      cdkBootstrapCommand,
-      "AWS CDK",
-      "CDK Bootstrap Successful",
-      "CDK Bootstrap Error"
-    );
-  }
+  //let cdkCLIConfigure = `aws configure --profile modullo_pipeline`;
+  let cdkCLIConfigure = `export AWS_ACCESS_KEY_ID=${options.deployAWSAccessKey} && export AWS_SECRET_ACCESS_KEY=${options.deployAWSSecretKey} && export AWS_DEFAULT_REGION=${options.deployAWSRegion}`;
+  await utilities.cliSpawnCommand(
+    options,
+    cdkCLIConfigure,
+    "AWS CLI",
+    {
+      message: "Configure Successful",
+      catch: true,
+      catchStrings: ["bootstrapped"]
+    },
+    {
+      message: "Configure Error",
+      catch: false,
+      catchStrings: ["error"]
+    },
+    async function(commandResult) {
+      if (commandResult) {
+        if (service == "cdk") {
+          //options.createInfrastructure == "pipeline"
 
-  if (platform == "cdk") {
-    let createCDKAppCommannds = `cd ${options.targetDirectory}`;
-    createCDKAppCommannds += ` && cdk init app --language javascript`;
-    //after, install required libraries e.g npm install @aws-cdk/aws-s3 @aws-cdk/aws-lambda
-    await utilities.cliSpawn(
-      options,
-      createCDKAppCommannds,
-      "AWS CDK",
-      "CDK App Creation Successful",
-      "CDK App Creation Error"
-    );
-  }
+          let cdkBootstrapString = `aws://${options.answers["aws-account-id"]}/${options.answers["aws-region"]}`;
+
+          let cdkBootstrapCommand = `export CDK_NEW_BOOTSTRAP=1 && npx cdk bootstrap --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess ${cdkBootstrapString}`;
+          await utilities.cliSpawnCommand(
+            options,
+            cdkBootstrapCommand,
+            "AWS CDK",
+            {
+              message: "Bootstrap Successful",
+              catch: true,
+              catchStrings: ["bootstrapped"]
+            },
+            {
+              message: "Bootstrap Error",
+              catch: false,
+              catchStrings: ["error"]
+            },
+            async function(commandResult) {
+              if (commandResult) {
+                console.log(
+                  `%s Initializing... `,
+                  chalk.green.bold(`AWS CDK:`)
+                );
+
+                // initialize new CDK or download repo
+                $init_mode = "new"; //new or repo
+
+                if ($init_mode == "repo") {
+                  //download from repo
+                }
+
+                if ($init_mode == "new") {
+                  let createCDKAppCommannds = `cd ${options.targetDirectory}`;
+                  createCDKAppCommannds += ` && cdk init app --language javascript`;
+                  //after, install required libraries e.g npm install @aws-cdk/aws-s3 @aws-cdk/aws-lambda
+                  await utilities.cliSpawnCommand(
+                    options,
+                    createCDKAppCommannds,
+                    "AWS CDK",
+                    {
+                      message: "Initialization Successful",
+                      catch: true,
+                      catchStrings: ["All done"]
+                    },
+                    {
+                      message: "Initialization Error",
+                      catch: false,
+                      catchStrings: ["error"]
+                    },
+                    async function(commandResult) {
+                      if (commandResult) {
+                        console.log(
+                          `%s Successfully Initialized`,
+                          chalk.green.bold(`AWS CDK:`)
+                        );
+                        // The `cdk.json` file tells the CDK Toolkit how to execute your app. The build step is not required when using JavaScript.
+
+                        // ## Useful commands
+
+                        //  * `npm run test`         perform the jest unit tests
+                        //  * `cdk deploy`           deploy this stack to your default AWS account/region
+                        //  * `cdk diff`             compare deployed stack with current state
+                        //  * `cdk synth`            emits the synthesized CloudFormation template
+
+                        // status.stop();
+                        // process.exit(1);
+                      } else {
+                        console.log(
+                          `%s Error Initializing`,
+                          chalk.red.bold(`CDK:`)
+                        );
+                        status.stop();
+                        process.exit(1);
+                      }
+                    }
+                  );
+                }
+              } else {
+                console.log(
+                  `%s Error Boostrapping`,
+                  chalk.red.bold(`AWS CDK:`)
+                );
+                status.stop();
+                process.exit(1);
+              }
+            }
+          );
+        }
+      } else {
+        console.log(`%s Error Configuring AWS CLI`, chalk.red.bold(`AWS CLI:`));
+        status.stop();
+        process.exit(1);
+      }
+    }
+  );
 }
 
 exports.configInit = configInit;

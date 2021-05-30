@@ -417,10 +417,9 @@ async function cli(args) {
 
     let framework_infrastructure;
 
-    framework_infrastructure =
-      options.installFramework == ""
-        ? options.createInfrastructure
-        : options.installFramework;
+    framework_infrastructure = Str(options.installFramework).isEmpty
+      ? options.createInfrastructure
+      : options.installFramework;
 
     let project_folder_name = `${params.general.create_output_folder}-${framework_infrastructure}-${options.deployPlatform}`;
 
@@ -453,21 +452,21 @@ async function cli(args) {
         await installRequirements.installRequirements(options); // require standard Modullo CLI requirements
 
         // require platform requirements
-        if (options.deployPlatform != "") {
+        if (Str(options.deployPlatform).isNotEmpty()) {
           options = await platformRequirements.checkRequirements(options);
         }
 
         //console.log(options)
 
         // require infrastructure requirements
-        if (options.createInfrastructure != "") {
+        if (Str(options.createInfrastructure).isNotEmpty()) {
           options = await infrastructureRequirements.checkRequirements(options);
         }
 
         //console.log(options)
 
         // require framework requirements
-        if (options.installFramework != "") {
+        if (Str(options.installFramework).isNotEmpty()) {
           options = await frameworkRequirements.checkRequirements(options);
         }
 
@@ -504,29 +503,6 @@ async function cli(args) {
         }
 
         //console.log(options)
-
-        break;
-
-      case "pipeline":
-        options.targetDirectory =
-          process.cwd() +
-          `/${params.general.pipeline_output_folder}-${options.installFramework}-${options.deployPlatform}`;
-
-        options.template = "pipeline";
-
-        await installRequirements.installRequirements(); // require standard Modullo CLI requirements
-
-        // require platform requirements
-        options = await platformRequirements.checkRequirements(
-          options,
-          "pipeline"
-        );
-
-        // require framework requirements
-        options = await frameworkRequirements.checkRequirements(
-          options,
-          "pipeline"
-        );
 
         break;
 

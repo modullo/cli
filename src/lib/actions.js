@@ -43,6 +43,10 @@ const repository = require(path.join(
   __dirname,
   "../infrastructure/repository/repository.js"
 ));
+const pipeline = require(path.join(
+  __dirname,
+  "../infrastructure/pipeline/pipeline.js"
+));
 
 async function initModulloCLI(options) {
   options.templateDirectory = path.join(
@@ -106,6 +110,9 @@ async function initModulloCLI(options) {
           break;
         case "repository":
           repository.createInit(options, "");
+          break;
+        case "pipeline":
+          pipeline.createInit(options, "cdk");
           break;
       }
 
