@@ -16,6 +16,7 @@ const pipeline = require(path.join(
   __dirname,
   "../infrastructure/pipeline/pipeline.js"
 ));
+const vm = require(path.join(__dirname, "../infrastructure/vm/vm.js"));
 
 function getArgs() {
   return {
@@ -25,7 +26,8 @@ function getArgs() {
     "--repository-name": String,
     "--repository-description": String,
     "--repository-visibility": String,
-    "--pipeline-name": String
+    "--pipeline-name": String,
+    "--vm-os": String
   };
 }
 exports.getArgs = getArgs;
@@ -39,7 +41,8 @@ function getOptions(args) {
     repositoryDescription:
       args["--repository-description"] || "A New Repository",
     repositoryVisibility: args["--repository-visibility"] || "private",
-    pipelineName: args["--pipeline-name"] || "Modullo Pipeline"
+    pipelineName: args["--pipeline-name"] || "Modullo Pipeline",
+    vmOS: args["--vm-os"] || "ubuntu"
   };
 }
 exports.getOptions = getOptions;
@@ -54,9 +57,8 @@ async function checkRequirements(options, service = "") {
     return optionsInfrastructure;
   }
   if (options.createInfrastructure == "vm") {
-    // optionsInfrastructure = await vm.cliRequirements(options); // require specific VM CLI requirements
-    // return optionsInfrastructure;
-    return options;
+    optionsInfrastructure = await vm.cliRequirements(options); // require specific VM CLI requirements
+    return optionsInfrastructure;
   }
   if (options.createInfrastructure == "pipeline") {
     optionsInfrastructure = await pipeline.cliRequirements(options); // require specific Pipeline CLI requirements

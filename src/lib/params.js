@@ -84,7 +84,11 @@ var params = {
         name: "Code Repository"
       },
       vm: {
-        name: "Virtual Machine"
+        name: "Virtual Machine",
+        params: {
+          os: ["ubuntu"],
+          regions: ["eu-west-1"]
+        }
       },
       pipeline: {
         name: "Pipeline"

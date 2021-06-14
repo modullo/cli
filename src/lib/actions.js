@@ -51,6 +51,7 @@ const pipeline = require(path.join(
   __dirname,
   "../infrastructure/pipeline/pipeline.js"
 ));
+const vm = require(path.join(__dirname, "../infrastructure/vm/vm.js"));
 
 async function initModulloCLI(options) {
   //options.port_increment = options.template.toLowerCase() == "production" ? 0 : 1000; //separate production & development ports
@@ -90,6 +91,9 @@ async function initModulloCLI(options) {
           break;
         case "pipeline":
           pipeline.createInit(options, "cdk");
+          break;
+        case "vm":
+          vm.createInit(options, "sdk");
           break;
       }
 

@@ -15,6 +15,14 @@ const inquirer = require("inquirer");
 //const { pipeline } = require("stream");
 const inquiries = require(path.join(__dirname, "./inquirer.js"));
 const utilities = require(path.join(__dirname, "../../lib/utilities.js"));
+const AMIs = require(path.join(__dirname, "./AMIs.js"));
+
+const {
+  EC2Client,
+  CreateKeyPairCommand,
+  CreateTagsCommand,
+  RunInstancesCommand
+} = require("@aws-sdk/client-ec2");
 
 async function cliRequirements(options) {
   if (options.installInteractive) {
@@ -233,6 +241,12 @@ async function configInit(
               }
             }
           );
+        } else {
+          console.log(
+            `%s \n Proceeding with ${init_caller} creation...`,
+            chalk.green.bold(`AWS:`)
+          );
+          callback(true);
         }
       } else {
         console.log(`%s Error Configuring AWS CLI`, chalk.red.bold(`AWS CLI:`));
@@ -244,3 +258,63 @@ async function configInit(
 }
 
 exports.configInit = configInit;
+
+async function createKeyPair(options, callback) {
+  const params = { KeyName: options.deployKeyPair }; //MY_KEY_PAIR
+  try {
+    const ec2Client = new EC2Client({ region: options.deployAWSRegion });
+    //console.log(ec2Client);
+    const data = await ec2Client.send(new CreateKeyPairCommand(params));
+    //console.log(JSON.stringify(data));
+    //return data;
+    callback(true, data);
+  } catch (err) {
+    console.log("AWS EC2 Key Pair Error: ", err);
+    callback(false, "");
+  }
+}
+exports.createKeyPair = createKeyPair;
+
+async function createEC2(options, callback) {
+  // Set the parameters
+  const amiIDs = AMIs.getData;
+  let AMI_ID = amiIDs[0][options.vmOS][options.deployAWSRegion];
+
+  const instanceParams = {
+    ImageId: AMI_ID, //AMI_ID
+    InstanceType: options.deployAWSInstanceType,
+    KeyName: options.deployKeyPair, //KEY_PAIR_NAME
+    MinCount: 1,
+    MaxCount: 1
+  };
+
+  try {
+    const ec2Client = new EC2Client({ region: options.deployAWSRegion });
+    const data = await ec2Client.send(new RunInstancesCommand(instanceParams));
+    //console.log(data.Instances[0]);
+    const instanceId = data.Instances[0].InstanceId;
+    console.log("Created instance", instanceId);
+    callback(true, data);
+    // Add tags to the instance
+    // const tagParams = {
+    //     Resources: [instanceId],
+    //     Tags: [
+    //         {
+    //             Key: "Name",
+    //             Value: "SDK Sample",
+    //         },
+    //     ],
+    // };
+    // try {
+    //     const data = await ec2Client.send(new CreateTagsCommand(tagParams));
+    //     console.log("Instance tagged");
+    // } catch (err) {
+    //     console.log("Error", err);
+    // }
+  } catch (err) {
+    console.log("Error", err);
+  }
+
+  run();
+}
+exports.createEC2 = createEC2;
