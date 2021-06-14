@@ -176,8 +176,8 @@ async function createInit(options, platform, service = "") {
         }
 
         var r = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/;
-        if (data.includes("RUNNING") && data.match(r)) {
-          let t = a.match(r);
+        if (String(data).includes("RUNNING") && String(data).match(r)) {
+          let t = String(data).match(r);
           console.log(t[0]);
           deployIP = t[0];
         }
@@ -343,7 +343,7 @@ async function createInit(options, platform, service = "") {
                     },
                     {
                       message: "Deployment Error",
-                      catch: false,
+                      catch: true,
                       catchStrings: ["error"]
                     },
                     async function(wordpressResult) {

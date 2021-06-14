@@ -43,23 +43,31 @@ var params = {
     }
   },
   frameworks: {
-    list: ["modullo", "wordpress"],
+    list: ["modullo", "wordpress", "ansible", "software", "laravel"],
     data: {
       modullo: {
-        name: "Modullo"
+        name: "Modullo",
+        template: true
       },
       wordpress: {
-        name: "Wordpress"
+        name: "Wordpress",
+        template: false
       },
       ansible: {
-        name: "Ansible"
+        name: "Ansible",
+        template: false
       },
       software: {
         name: "Software",
+        template: false,
         linux: {
           stacks: ["lemp", "lamp"],
           packages: ["php", "nginx", "apache", "mysql", "custom"]
         }
+      },
+      laravel: {
+        name: "Laravel",
+        template: true
       }
     }
   },

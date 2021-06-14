@@ -105,7 +105,7 @@ async function createInit(options, platform, service = "") {
           },
           {
             message: "Error creating Github repository",
-            catch: false,
+            catch: true,
             catchStrings: ["error"]
           },
           async function(repoCreateResult, resultString = "") {

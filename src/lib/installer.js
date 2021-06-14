@@ -36,7 +36,7 @@ async function install(options, software_slug, software_name) {
       },
       {
         message: "Installation Error",
-        catch: false,
+        catch: true,
         catchStrings: ["error"]
       },
       async function(installResult) {

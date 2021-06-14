@@ -87,12 +87,10 @@ async function cli(args) {
         "--multi-app": Boolean,
         "--multi-container": Boolean,
         "--app": String,
-        "--keypair": String,
         "--email": String,
         "--domain": String,
         "--dns": String,
-        "--dns_resolver": String,
-        "--azure-region": String
+        "--dns_resolver": String
       };
 
       //add additional baseArgs from infrastructure, platform or framework requirements
@@ -124,6 +122,7 @@ async function cli(args) {
         databasePassword: Str.random(18),
         modulloAppID: Str.random(5),
         createProject: args["--create-project"] || false,
+        serverlessFramework: args["--serverless"] || true,
         argTemplate: args["--template"] || "production",
         argEmail: args["--email"],
         argAgreeementTOS: args["--agreement"],
@@ -134,14 +133,10 @@ async function cli(args) {
         multiApp: args["--multi-app"] || false,
         multiContainer: args["--multi-container"] || false,
         appName: args["--app"] || "",
-        deployKeyPair: args["--keypair"] || "none",
-        deployAWSInstanceType: args["--aws-instance-type"] || "t2.micro",
-        deployAWSInstanceSize: args["--aws-instance-size"] || 1,
         argFeatures: args["--features"] || "all",
         argDomain: args["--domain"],
         argDNS: args["--dns"] || "localhost",
-        argDNSResolver: args["--dns_resolver"] || "valet",
-        deployAzureRegion: args["--azure-region"] || "ukwest"
+        argDNSResolver: args["--dns_resolver"] || "valet"
       };
 
       //add additional baseOptions from infrastructure, platform or framework requirements
@@ -259,11 +254,11 @@ async function cli(args) {
   async function assertModulloConfig(options) {
     let modulloConfigPath = path.join(process.cwd(), `modullo.yaml`);
 
-    let modulloConfifExists = await utilities.file_exists(modulloConfigPath);
+    let modulloConfigfExists = await utilities.file_exists(modulloConfigPath);
 
     //check if file exists
 
-    if (modulloConfifExists) {
+    if (modulloConfigfExists) {
       console.log(
         `%s Modullo APP Configuration FOUND. Reading...`,
         chalk.blueBright.bold("CLI:")
@@ -417,21 +412,29 @@ async function cli(args) {
 
     let framework_infrastructure;
 
-    framework_infrastructure = Str(options.installFramework).isEmpty
+    framework_infrastructure = Str(options.installFramework).isEmpty()
       ? options.createInfrastructure
       : options.installFramework;
 
     let project_folder_name = `${params.general.create_output_folder}-${framework_infrastructure}-${options.deployPlatform}`;
-
-    //options.targetDirectory = process.cwd() + `/${params.general.create_output_folder}-${framework_infrastructure}-${options.deployPlatform}`;
 
     options.targetDirectory = path.join(
       process.cwd(),
       `${project_folder_name}`
     );
 
-    options.template =
-      options.installFramework == "modullo" ? "modullo" : "create";
+    //decide on template choice (if the framework has its own template or we use a general create one)
+    let framework_template = false;
+    if (
+      Str(options.installFramework).isNotEmpty() &&
+      params.frameworks.list.includes(options.installFramework)
+    ) {
+      framework_template =
+        params.frameworks.data[`${options.installFramework}`]["template"];
+    }
+    options.template = framework_template
+      ? options.installFramework.toLowerCase()
+      : "create";
 
     switch (options.defaultAction) {
       case "config":
@@ -545,6 +548,35 @@ async function cli(args) {
     //   answers
     // };
   }
+
+  options.templateDirectory = path.join(
+    options.packageDirectory,
+    `src`,
+    `templates`,
+    options.template.toLowerCase()
+  );
+
+  //Dev Mode allows developers to display extract critical info and prevent running the full CLI cycle
+  if (options.devMode) {
+    console.log(
+      "%s Modullo Package Directory: " + options.packageDirectory,
+      chalk.yellow.bold("DEV: ")
+    );
+    console.log(
+      "%s Modullo Template Directory: " + options.templateDirectory,
+      chalk.yellow.bold("DEV: ")
+    );
+    console.log(
+      "%s Modullo Target Directory: " + options.targetDirectory,
+      chalk.yellow.bold("DEV: ")
+    );
+    console.log(`%s Modullo Options (FULL):`, chalk.yellow.bold("DEV: "));
+    console.log(options);
+    console.log("\n");
+    process.exit(1);
+  }
+
+  await utilities.installTemplateFiles(options);
 
   //process the CLI arguments & options into Modullo Actions
   await actions.initModulloCLI(options);

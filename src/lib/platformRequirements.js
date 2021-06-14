@@ -21,6 +21,7 @@ const linux = require(path.join(__dirname, "../platforms/linux/Linux.js"));
 
 function getArgs() {
   return {
+    "--keypair": String,
     "--aws-account-id": String,
     "--aws-access-key": String,
     "--aws-secret-key": String,
@@ -28,13 +29,15 @@ function getArgs() {
     "--machine-host": String,
     "--machine-username": String,
     "--machine-key-path": String,
-    "--project-path": String
+    "--project-path": String,
+    "--azure-region": String
   };
 }
 exports.getArgs = getArgs;
 
 function getOptions(args) {
   return {
+    deployKeyPair: args["--keypair"] || "none",
     deployAWSAccountID: args["--aws-account-id"] || "",
     deployAWSAccessKey: args["--aws-access-key"] || "",
     deployAWSSecretKey: args["--aws-secret-key"] || "",
@@ -43,7 +46,8 @@ function getOptions(args) {
     machineUsername: args["--machine-username"] || "ubuntu",
     machineKeyPath: args["--machine-key-path"] || "",
     ansibleInventoryPath: "",
-    projectPath: args["--machine-key-path"] || ""
+    projectPath: args["--machine-key-path"] || "",
+    deployAzureRegion: args["--azure-region"] || "ukwest"
   };
 }
 exports.getOptions = getOptions;

@@ -88,7 +88,7 @@ async function configInit(options, platform, service = null, callback) {
       },
       {
         message: `Connection to ${options.machineHost} Failed`,
-        catch: false,
+        catch: true,
         catchStrings: ["error"]
       },
       callback

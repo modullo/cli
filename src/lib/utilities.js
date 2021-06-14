@@ -1387,10 +1387,12 @@ async function cliSpawnCommand(
       }
 
       for (var i = 0; i < errorRequest.catchStrings.length; i++) {
-        if (data.includes(errorRequest.catchStrings[i])) {
-          console.log(`%s Success Detected`, chalk.red.bold(`${callerID}: `));
-          callbackData = data;
-          callback(false, callbackData);
+        if (errorRequest.catch) {
+          if (data.includes(errorRequest.catchStrings[i])) {
+            console.log(`%s Error Detected`, chalk.red.bold(`${callerID}: `));
+            callbackData = data;
+            callback(false, callbackData);
+          }
         }
       }
     });
@@ -1414,13 +1416,15 @@ async function cliSpawnCommand(
       }
 
       for (var i = 0; i < errorRequest.catchStrings.length; i++) {
-        if (data.includes(errorRequest.catchStrings[i])) {
-          console.log(
-            `%s ${errorRequest.message}: ` + data,
-            chalk.red.bold(`${callerID}: `)
-          );
-          callbackData = data;
-          callback(false, callbackData);
+        if (errorRequest.catch) {
+          if (data.includes(errorRequest.catchStrings[i])) {
+            console.log(
+              `%s ${errorRequest.message}: ` + data,
+              chalk.red.bold(`${callerID}: `)
+            );
+            callbackData = data;
+            callback(false, callbackData);
+          }
         }
       }
     });

@@ -14,6 +14,11 @@ const software = require(path.join(
   "../frameworks/software/Software.js"
 ));
 
+const laravel = require(path.join(
+  __dirname,
+  "../frameworks/laravel/Laravel.js"
+));
+
 function getArgs() {
   return {
     "--firstname": String,
@@ -21,7 +26,9 @@ function getArgs() {
     "--password": String,
     "--software-package-type": String,
     "--software-package": String,
-    "--app-user": String
+    "--app-user": String,
+    "--serverless": Boolean,
+    "--laravel-version": String
   };
 }
 exports.getArgs = getArgs;
@@ -33,7 +40,9 @@ function getOptions(args) {
     argPassword: args["--password"],
     softwarePackageType: args["--software-package-type"] || "single",
     softwarePackage: args["--software-package"] || "custom",
-    appUser: args["--app-user"] || "user"
+    appUser: args["--app-user"] || "user",
+    serverlessFramework: args["--serverless"] || true,
+    laravelVersion: args["--laravel-version"] || "latest"
   };
 }
 exports.getOptions = getOptions;
@@ -41,17 +50,18 @@ exports.getOptions = getOptions;
 async function checkRequirements(options, service = "") {
   if (options.installFramework == "wordpress") {
     optionsFramework = await wordpress.cliRequirements(options); // require specific Wordpress CLI requirements
-    // wordpress.createInit(options);
     return optionsFramework;
   }
   if (options.installFramework == "modullo") {
     optionsFramework = await modullo.cliRequirements(options); // require specific Modullo CLI requirements
-    // wordpress.createInit(options);
     return optionsFramework;
   }
   if (options.installFramework == "software") {
     optionsFramework = await software.cliRequirements(options); // require specific Software CLI requirements
-    // wordpress.createInit(options);
+    return optionsFramework;
+  }
+  if (options.installFramework == "laravel") {
+    optionsFramework = await laravel.cliRequirements(options); // require specific Laravel CLI requirements
     return optionsFramework;
   }
 }

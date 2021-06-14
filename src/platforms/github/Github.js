@@ -88,7 +88,7 @@ async function configInit(options, platform, service = null, callback) {
     },
     {
       message: "Github Login Error",
-      catch: false,
+      catch: true,
       catchStrings: ["error"]
     },
     callback

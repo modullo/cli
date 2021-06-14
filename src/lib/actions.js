@@ -20,7 +20,7 @@ exports.params = params;
 const Str = require("@supercharge/strings");
 exports.Str = Str;
 var _ = require("lodash/core");
-const utilities = require(path.join(__dirname, "./utilities.js"));
+//const utilities = require(path.join(__dirname, "./utilities.js"));
 const { installModullo } = require("./installModullo");
 const aws = require(path.join(__dirname, "../platforms/aws/AWS.js"));
 const wordpress = require(path.join(
@@ -34,6 +34,10 @@ const modullo = require(path.join(
 const software = require(path.join(
   __dirname,
   "../frameworks/software/Software.js"
+));
+const laravel = require(path.join(
+  __dirname,
+  "../frameworks/laravel/Laravel.js"
 ));
 const containerRegistry = require(path.join(
   __dirname,
@@ -49,40 +53,9 @@ const pipeline = require(path.join(
 ));
 
 async function initModulloCLI(options) {
-  options.templateDirectory = path.join(
-    options.packageDirectory,
-    `src`,
-    `templates`,
-    options.template.toLowerCase()
-  );
+  //options.port_increment = options.template.toLowerCase() == "production" ? 0 : 1000; //separate production & development ports
 
-  //Dev Mode allows developers to display extract critical info and prevent running the full CLI cycle
-  if (options.devMode) {
-    console.log(
-      "%s Modullo Package Directory: " + options.packageDirectory,
-      chalk.yellow.bold("DEV: ")
-    );
-    console.log(
-      "%s Modullo Template Directory: " + options.templateDirectory,
-      chalk.yellow.bold("DEV: ")
-    );
-    console.log(
-      "%s Modullo Target Directory: " + options.targetDirectory,
-      chalk.yellow.bold("DEV: ")
-    );
-    console.log(`%s Modullo Options (FULL):`, chalk.yellow.bold("DEV: "));
-    console.log(options);
-    console.log("\n");
-    process.exit(1);
-  }
-
-  await utilities.installTemplateFiles(options);
-
-  options.port_increment =
-    options.template.toLowerCase() == "production" ? 0 : 1000; //separate production & development ports
-
-  options.container_name_addon =
-    options.template.toLowerCase() == "production" ? "" : "_development"; //separate production & development ports
+  //options.container_name_addon = options.template.toLowerCase() == "production" ? "" : "_development"; //separate production & development ports
 
   switch (options.defaultAction) {
     case "config":
@@ -101,6 +74,10 @@ async function initModulloCLI(options) {
 
         case "wordpress":
           wordpress.createInit(options, options.deployPlatform);
+          break;
+
+        case "laravel":
+          laravel.createInit(options, "serverless");
           break;
       }
 
@@ -127,13 +104,6 @@ async function initModulloCLI(options) {
             options.createInfrastructure
           );
           break;
-      }
-
-      break;
-
-    case "pipeline":
-      if (options.installFramework == "wordpress") {
-        wordpress.createPipeline(options, "cdk", "pipeline");
       }
 
       break;

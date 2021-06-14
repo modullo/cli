@@ -19,6 +19,8 @@ const pipeline = require(path.join(
 
 function getArgs() {
   return {
+    "--aws-instance-type": String,
+    "--aws-instance-size": String,
     "--registry-name": String,
     "--repository-name": String,
     "--repository-description": String,
@@ -30,6 +32,8 @@ exports.getArgs = getArgs;
 
 function getOptions(args) {
   return {
+    deployAWSInstanceType: args["--aws-instance-type"] || "t2.micro",
+    deployAWSInstanceSize: args["--aws-instance-size"] || 1,
     registryName: args["--registry-name"] || "",
     repositoryName: args["--repository-name"] || "",
     repositoryDescription:
