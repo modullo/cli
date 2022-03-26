@@ -19,9 +19,14 @@ const AMIs = require(path.join(__dirname, "./AMIs.js"));
 
 const {
   EC2Client,
+  DescribeInstancesCommand,
   CreateKeyPairCommand,
   CreateTagsCommand,
-  RunInstancesCommand
+  RunInstancesCommand,
+  DescribeVpcsCommand,
+  CreateSecurityGroupCommand,
+  AuthorizeSecurityGroupIngressCommand,
+  AuthorizeSecurityGroupEgressCommand,
 } = require("@aws-sdk/client-ec2");
 
 async function cliRequirements(options) {
@@ -93,7 +98,7 @@ function deployRequirements(options, service = "") {
       title: "Checking for AWS CLI",
       task: (ctx, task) =>
         execa("aws", ["--version"])
-          .then(result => {
+          .then((result) => {
             if (result.stdout.includes("aws-cli")) {
               count_checks++;
             } else {
@@ -102,19 +107,19 @@ function deployRequirements(options, service = "") {
               );
             }
           })
-          .catch(e => {
+          .catch((e) => {
             console.log(e);
             ctx.aws = false;
             throw new Error(
               "AWS CLI not available. Download at https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html"
             );
-          })
+          }),
     },
     {
       title: "Checking for AWS ECS CLI",
       task: (ctx, task) =>
         execa("ecs-cli", ["--version"])
-          .then(result => {
+          .then((result) => {
             if (result.stdout.includes("ecs-cli")) {
               count_checks++;
             } else {
@@ -123,14 +128,14 @@ function deployRequirements(options, service = "") {
               );
             }
           })
-          .catch(e => {
+          .catch((e) => {
             console.log(e);
             ctx.aws = false;
             throw new Error(
               "AWS ECS CLI not available. Download at https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_installation.html"
             );
-          })
-    }
+          }),
+    },
   ];
 
   if (service == "pipeline") {
@@ -138,7 +143,7 @@ function deployRequirements(options, service = "") {
       title: "Checking for AWS CDK",
       task: (ctx, task) =>
         execa("cdk", ["--version"])
-          .then(result => {
+          .then((result) => {
             if (
               result.stdout.includes(".") &&
               result.stdout.includes("build")
@@ -150,13 +155,13 @@ function deployRequirements(options, service = "") {
               );
             }
           })
-          .catch(e => {
+          .catch((e) => {
             console.log(e);
             ctx.aws = false;
             throw new Error(
               "AWS CDK not available. Learn more at https://docs.aws.amazon.com/cdk/latest/guide/getting_started.html"
             );
-          })
+          }),
     });
   }
 
@@ -164,7 +169,7 @@ function deployRequirements(options, service = "") {
     title: "AWS Automation",
     task: () => {
       return new Listr(AWSReqs, { concurrent: false });
-    }
+    },
   };
 
   return [requirementsAWS, count_checks];
@@ -192,16 +197,16 @@ async function configInit(
     cdkCLIConfigure,
     "AWS CLI",
     {
-      message: "Configure Successful",
+      message: "Environment Configuration Successful",
       catch: true,
-      catchStrings: ["bootstrapped"]
+      catchStrings: ["bootstrapped"],
     },
     {
-      message: "Configure Error",
+      message: "Environment Configuration Error",
       catch: false,
-      catchStrings: ["error"]
+      catchStrings: ["error"],
     },
-    async function(commandResult) {
+    async function (commandResult) {
       if (commandResult) {
         if (service == "cdk" || service == "serverless") {
           //options.createInfrastructure == "pipeline"
@@ -214,19 +219,20 @@ async function configInit(
             cdkBootstrapCommand,
             "AWS CDK",
             {
-              message: "Bootstrap Successful",
+              message: "Environment Bootstrap Successful",
               catch: true,
-              catchStrings: ["bootstrapped"]
+              catchStrings: ["bootstrapped"],
             },
             {
-              message: "Bootstrap Error",
+              message: "Environment Bootstrap Error",
               catch: true,
-              catchStrings: ["error"]
+              catchStrings: ["error"],
             },
-            async function(commandResult) {
+            async function (commandResult) {
               if (commandResult) {
+                console.log(`\n`);
                 console.log(
-                  `%s \n Proceeding with ${init_caller} creation...`,
+                  `%s Proceeding with ${init_caller} creation...`,
                   chalk.green.bold(`AWS CDK:`)
                 );
 
@@ -242,14 +248,18 @@ async function configInit(
             }
           );
         } else {
+          console.log(`\n`);
           console.log(
-            `%s \n Proceeding with ${init_caller} creation...`,
+            `%s Proceeding with ${init_caller} creation...`,
             chalk.green.bold(`AWS:`)
           );
           callback(true);
         }
       } else {
-        console.log(`%s Error Configuring AWS CLI`, chalk.red.bold(`AWS CLI:`));
+        console.log(
+          `%s Error Configuring AWS Environment`,
+          chalk.red.bold(`AWS CLI:`)
+        );
         status.stop();
         process.exit(1);
       }
@@ -267,7 +277,43 @@ async function createKeyPair(options, callback) {
     const data = await ec2Client.send(new CreateKeyPairCommand(params));
     //console.log(JSON.stringify(data));
     //return data;
-    callback(true, data);
+    //write Private Key to file
+
+    let homeDir = await utilities.homeDirectory();
+    let globalConfigFolder = path.join(homeDir, `.modullo/private_keys`);
+
+    let key_output = `${globalConfigFolder}/${options.deployKeyPair}`;
+    await utilities.writeFile(
+      options,
+      data.KeyMaterial,
+      key_output,
+      function (writeResponse) {
+        if (writeResponse) {
+          //chmod file
+          fs.chmod(key_output, 0o400, (err) => {
+            if (err) {
+              console.error(
+                `%s Error changing file permission on VM Private Key at ${key_output}`,
+                chalk.red.bold(`CLI:`)
+              );
+              callback(false, "");
+            } else {
+              console.log(
+                `%s VM Private Key successfully writted and secured (chmod 400) at ${key_output}`,
+                chalk.green.bold(`CLI:`)
+              );
+              callback(true, data);
+            }
+          });
+        } else {
+          console.error(
+            `%s Error writing VM Private Key to ${key_output}`,
+            chalk.red.bold(`CLI:`)
+          );
+          callback(false, "");
+        }
+      }
+    );
   } catch (err) {
     console.log("AWS EC2 Key Pair Error: ", err);
     callback(false, "");
@@ -276,45 +322,173 @@ async function createKeyPair(options, callback) {
 exports.createKeyPair = createKeyPair;
 
 async function createEC2(options, callback) {
+  const ec2Client = new EC2Client({ region: options.deployAWSRegion });
+
   // Set the parameters
   const amiIDs = AMIs.getData;
   let AMI_ID = amiIDs[0][options.vmOS][options.deployAWSRegion];
+
+  let SGID;
+
+  //create security group and ingress params
+
+  try {
+    // Set the parameters
+    const params_vpc = { KeyName: options.deployKeyPair }; //KEY_PAIR_NAME
+    let vpc_sg = null;
+
+    const data_vpc = await ec2Client.send(new DescribeVpcsCommand(params_vpc));
+    //return data_vpc;
+    //vpc_sg = data_vpc.Vpcs[0].VpcId;
+
+    data_vpc.Vpcs.forEach((element) => {
+      if (element.IsDefault) {
+        vpc_sg = element.VpcId;
+      }
+    });
+    vpc_sg = vpc_sg == null ? data_vpc.Vpcs[0].VpcId : vpc_sg;
+
+    const paramsSecurityGroup = {
+      Description: "Modullo VM Security Group", //DESCRIPTION
+      GroupName: "ModulloVMSecurityGroup" + Str.random(4), // SECURITY_GROUP_NAME
+      VpcId: vpc_sg,
+    };
+
+    const data_sg = await ec2Client.send(
+      new CreateSecurityGroupCommand(paramsSecurityGroup)
+    );
+    const SecurityGroupId = data_sg.GroupId;
+    SGID = SecurityGroupId;
+    //console.log("Success", SecurityGroupId);
+    //return data;
+    console.log(
+      `%s Security Group Created ${SecurityGroupId}`,
+      chalk.green.bold(`AWS:`)
+    );
+
+    const paramsIngress = {
+      GroupId: SecurityGroupId, //SECURITY_GROUP_ID
+      IpPermissions: [
+        {
+          IpProtocol: "tcp",
+          FromPort: 80,
+          ToPort: 80,
+          IpRanges: [{ CidrIp: "0.0.0.0/0" }],
+        },
+        {
+          IpProtocol: "tcp",
+          FromPort: 443,
+          ToPort: 443,
+          IpRanges: [{ CidrIp: "0.0.0.0/0" }],
+        },
+        {
+          IpProtocol: "tcp",
+          FromPort: 22,
+          ToPort: 22,
+          IpRanges: [{ CidrIp: "0.0.0.0/0" }],
+        },
+        {
+          IpProtocol: "icmp",
+          FromPort: -1,
+          ToPort: -1,
+          IpRanges: [{ CidrIp: "0.0.0.0/0" }],
+        },
+      ],
+    };
+    const dataIngress = await ec2Client.send(
+      new AuthorizeSecurityGroupIngressCommand(paramsIngress)
+    );
+    console.log(
+      `%s Security Group Ingress Rules Created ${SecurityGroupId}`,
+      chalk.green.bold(`AWS:`)
+    );
+
+    // const paramsEgress = {
+    //   GroupId: SecurityGroupId, //SECURITY_GROUP_ID
+    //   IpPermissions: [
+    //     {
+    //       IpProtocol: "-1",
+    //       FromPort: -1,
+    //       ToPort: -1,
+    //       IpRanges: [{ CidrIp: "0.0.0.0/0" }],
+    //     },
+    //   ],
+    // };
+
+    // const dataEgress = await ec2Client.send(
+    //   new AuthorizeSecurityGroupEgressCommand(paramsEgress)
+    // );
+    // console.log(
+    //   `%s Security Group Egress Rules Created ${SecurityGroupId}`,
+    //   chalk.green.bold(`AWS:`)
+    // );
+
+    //console.log("Ingress Successfully Set", data);
+    //return data;
+  } catch (error) {
+    console.log("Error Creating Security Group", error);
+  }
 
   const instanceParams = {
     ImageId: AMI_ID, //AMI_ID
     InstanceType: options.deployAWSInstanceType,
     KeyName: options.deployKeyPair, //KEY_PAIR_NAME
     MinCount: 1,
-    MaxCount: 1
+    MaxCount: 1,
+    SecurityGroupIds: [`${SGID}`],
   };
 
   try {
-    const ec2Client = new EC2Client({ region: options.deployAWSRegion });
-    const data = await ec2Client.send(new RunInstancesCommand(instanceParams));
+    const dataEC2 = await ec2Client.send(
+      new RunInstancesCommand(instanceParams)
+    );
     //console.log(data.Instances[0]);
-    const instanceId = data.Instances[0].InstanceId;
+    const instanceId = dataEC2.Instances[0].InstanceId;
     console.log("Created instance", instanceId);
-    callback(true, data);
-    // Add tags to the instance
-    // const tagParams = {
-    //     Resources: [instanceId],
-    //     Tags: [
-    //         {
-    //             Key: "Name",
-    //             Value: "SDK Sample",
-    //         },
-    //     ],
-    // };
-    // try {
-    //     const data = await ec2Client.send(new CreateTagsCommand(tagParams));
-    //     console.log("Instance tagged");
-    // } catch (err) {
-    //     console.log("Error", err);
-    // }
-  } catch (err) {
-    console.log("Error", err);
-  }
 
-  run();
+    //Add tags to the instance
+    const tagParams = {
+      Resources: [instanceId],
+      Tags: [
+        {
+          Key: "ModulloAppID",
+          Value: options.modulloAppID,
+        },
+        {
+          Key: "Name",
+          Value: options.vmName,
+        },
+      ],
+    };
+
+    try {
+      //const ec2Client = new EC2Client({ region: options.deployAWSRegion });
+      const dataTag = await ec2Client.send(new CreateTagsCommand(tagParams));
+      console.log(`Instance tagged  ModulloAppID: ${options.modulloAppID}`);
+    } catch (err) {
+      console.log("Error Tagging", err);
+      callback(false, err);
+    }
+
+    callback(true, dataEC2);
+  } catch (err) {
+    console.log("Error Creating Instance", err);
+    callback(false, err);
+  }
 }
 exports.createEC2 = createEC2;
+
+async function describeEC2(instance_ids, options, callback) {
+  try {
+    const ec2Client = new EC2Client({ region: options.deployAWSRegion });
+    const dataEC2 = await ec2Client.send(
+      new DescribeInstancesCommand(instance_ids)
+    );
+    //console.log("Success", JSON.stringify(data));
+    callback(true, dataEC2);
+  } catch (err) {
+    console.log("Error", err);
+    callback(false, err);
+  }
+}
+exports.describeEC2 = describeEC2;

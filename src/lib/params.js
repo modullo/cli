@@ -15,7 +15,7 @@ var params = {
     path_core_user_register: "register",
     path_hub_admin_login: "login",
     default_domain_production: "modullo-prod.test",
-    default_domain_development: "modullo-dev.test"
+    default_domain_development: "modullo-dev.test",
   },
   installer: {
     available_os: ["win32", "darwin"],
@@ -26,9 +26,9 @@ var params = {
         data: {
           app_name: {
             message_success: "success",
-            message_error: "error"
-          }
-        }
+            message_error: "error",
+          },
+        },
       },
       win32: {
         available_software: ["docker-desktop"],
@@ -36,84 +36,104 @@ var params = {
         data: {
           "docker-desktop": {
             message_success: "success",
-            message_error: "error"
-          }
-        }
-      }
-    }
+            message_error: "error",
+          },
+        },
+      },
+    },
   },
   frameworks: {
-    list: ["modullo", "wordpress", "ansible", "software", "laravel"],
+    list: ["base", "modullo", "wordpress", "ansible", "software", "laravel"],
     data: {
+      base: {
+        name: "Base",
+        template: false,
+      },
       modullo: {
         name: "Modullo",
-        template: true
+        template: true,
       },
       wordpress: {
         name: "Wordpress",
-        template: false
+        template: false,
       },
       ansible: {
         name: "Ansible",
-        template: false
+        template: false,
+        software: {
+          nginx: {
+            "galaxy-role": "nginxinc.nginx",
+          },
+        },
+        roles: ["aws-vpc"],
       },
       software: {
         name: "Software",
         template: false,
         linux: {
-          stacks: ["lemp", "lamp"],
-          packages: ["php", "nginx", "apache", "mysql", "custom"]
-        }
+          stacks: [], //"lemp", "lamp"
+          packages: ["nginx", "custom"],
+        },
       },
       laravel: {
         name: "Laravel",
-        template: true
-      }
-    }
+        template: true,
+      },
+    },
   },
   infrastructure: {
-    list: ["pipeline", "container-registry", "repository", "vm", "pipeline"],
+    list: [
+      "pipeline",
+      "container-registry",
+      "repository",
+      "vm",
+      "pipeline",
+      "vpc",
+    ],
     data: {
       pipeline: {
-        name: "Pipeline"
+        name: "Pipeline",
       },
       "container-registry": {
-        name: "Container Registry"
+        name: "Container Registry",
       },
       repository: {
-        name: "Code Repository"
+        name: "Code Repository",
       },
       vm: {
         name: "Virtual Machine",
         params: {
           os: ["ubuntu"],
-          regions: ["eu-west-1"]
-        }
+          regions: ["eu-west-1"],
+        },
       },
       pipeline: {
-        name: "Pipeline"
-      }
-    }
+        name: "Pipeline",
+      },
+      vpc: {
+        name: "Virtual Private Container",
+      },
+    },
   },
   platforms: {
     list: ["local", "aws", "azure", "github", "linux"],
     data: {
       local: {
-        name: "Local"
+        name: "Local",
       },
       aws: {
-        name: "AWS"
+        name: "AWS",
       },
       azure: {
-        name: "Azure"
+        name: "Azure",
       },
       github: {
-        name: "Github"
+        name: "Github",
       },
       linux: {
-        name: "Linux"
-      }
-    }
+        name: "Linux",
+      },
+    },
   },
   versions: {
     production: {
@@ -125,12 +145,12 @@ var params = {
         "hub_web",
         "mysql",
         "redis",
-        "smtp"
+        "smtp",
       ],
       git_repo_core: "modullo/core",
       git_branch_core: "dev",
       git_repo_hub: "modullo/hub",
-      git_branch_hub: "dev"
+      git_branch_hub: "dev",
     },
     development: {
       services: [
@@ -141,20 +161,20 @@ var params = {
         "hub_web",
         "mysql",
         "redis",
-        "smtp"
+        "smtp",
       ],
       git_repo_core: "modullo/core",
       git_branch_core: "dev",
       git_repo_hub: "modullo/hub",
-      git_branch_hub: "dev"
-    }
+      git_branch_hub: "dev",
+    },
   },
   docker: {
     services: {
       proxy: {
         name: "modullo_proxy",
         port: 20030,
-        image: "jwilder/nginx-proxy"
+        image: "jwilder/nginx-proxy",
       },
       core_app: {
         name: "modullo_core_app",
@@ -163,12 +183,12 @@ var params = {
         working_dir: "/var/www/modullo-core",
         env_file: "./app/env_core_production",
         volumes_env: "./app/env_core_production:/var/www/modullo-core/.env",
-        volumes_php_ini: "./app/local.ini:/usr/local/etc/php/conf.d/local.ini"
+        volumes_php_ini: "./app/local.ini:/usr/local/etc/php/conf.d/local.ini",
       },
       core_web: {
         subdomain: "core",
         name: "modullo_core_web",
-        port: 20032
+        port: 20032,
       },
       hub_app: {
         name: "modullo_hub_app",
@@ -177,12 +197,12 @@ var params = {
         working_dir: "/var/www/modullo-hub",
         env_file: "./app/env_hub_production",
         volumes_env: "./app/env_hub_production:/var/www/modullo-hub/.env",
-        volumes_php_ini: "./app/local.ini:/usr/local/etc/php/conf.d/local.ini"
+        volumes_php_ini: "./app/local.ini:/usr/local/etc/php/conf.d/local.ini",
       },
       hub_web: {
         subdomain: "hub",
         name: "modullo_hub_web",
-        port: 20034
+        port: 20034,
       },
       mysql: {
         subdomain: "mysql",
@@ -192,28 +212,28 @@ var params = {
         user: "root",
         password: "P@sSW0rD",
         db_core: "modullo_core",
-        db_hub: "modullo_hub"
+        db_hub: "modullo_hub",
       },
       redis: {
         subdomain: "redis",
         name: "modullo_redis",
         port: 20036,
-        image: "redis:5.0-alpine"
+        image: "redis:5.0-alpine",
       },
       smtp: {
         subdomain: "smtp",
         name: "modullo_smtp",
         port: 20037,
         port_2: 20038,
-        image: "mailhog/mailhog:latest"
+        image: "mailhog/mailhog:latest",
       },
       reloader: {
         name: "modullo_reloader",
         port: 20039,
-        image: ""
-      }
-    }
-  }
+        image: "",
+      },
+    },
+  },
 };
 
 module.exports = params;

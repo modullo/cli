@@ -88,7 +88,7 @@ exports.cliRequirements = cliRequirements;
 
 async function createInit(options, platform, service = "") {
   const status = new Spinner(
-    `Creating Wordpress Application on ${platform.toUpperCase()}...`
+    `Creating Modullo Application on ${platform.toUpperCase()}...`
   );
   await status.start();
 

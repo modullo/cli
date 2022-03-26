@@ -52,6 +52,7 @@ const pipeline = require(path.join(
   "../infrastructure/pipeline/pipeline.js"
 ));
 const vm = require(path.join(__dirname, "../infrastructure/vm/vm.js"));
+const vpc = require(path.join(__dirname, "../infrastructure/vpc/vpc.js"));
 
 async function initModulloCLI(options) {
   //options.port_increment = options.template.toLowerCase() == "production" ? 0 : 1000; //separate production & development ports
@@ -69,15 +70,35 @@ async function initModulloCLI(options) {
 
     case "create":
       switch (options.installFramework) {
+        case "base":
+          //do nothing
+          console.log(
+            "%s None selected.",
+            chalk.blue.bold("Modullo FRAMEWORK:")
+          );
+          break;
+
         case "modullo":
+          console.log(
+            "%s Modullo selected.",
+            chalk.blue.bold("Modullo FRAMEWORK:")
+          );
           modullo.createInit(options, "");
           break;
 
         case "wordpress":
+          console.log(
+            "%s WordPress selected.",
+            chalk.blue.bold("Modullo FRAMEWORK:")
+          );
           wordpress.createInit(options, options.deployPlatform);
           break;
 
         case "laravel":
+          console.log(
+            "%s Laravel selected.",
+            chalk.blue.bold("Modullo FRAMEWORK:")
+          );
           laravel.createInit(options, "serverless");
           break;
       }
@@ -94,6 +115,9 @@ async function initModulloCLI(options) {
           break;
         case "vm":
           vm.createInit(options, "sdk");
+          break;
+        case "vpc":
+          vpc.createInit(options, "ansible");
           break;
       }
 

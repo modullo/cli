@@ -28,7 +28,7 @@ function getArgs() {
     "--software-package": String,
     "--app-user": String,
     "--serverless": Boolean,
-    "--laravel-version": String
+    "--laravel-version": String,
   };
 }
 exports.getArgs = getArgs;
@@ -42,12 +42,15 @@ function getOptions(args) {
     softwarePackage: args["--software-package"] || "custom",
     appUser: args["--app-user"] || "user",
     serverlessFramework: args["--serverless"] || true,
-    laravelVersion: args["--laravel-version"] || "latest"
+    laravelVersion: args["--laravel-version"] || "latest",
   };
 }
 exports.getOptions = getOptions;
 
 async function checkRequirements(options, service = "") {
+  if (options.installFramework == "base") {
+    return options;
+  }
   if (options.installFramework == "wordpress") {
     optionsFramework = await wordpress.cliRequirements(options); // require specific Wordpress CLI requirements
     return optionsFramework;

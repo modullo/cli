@@ -60,7 +60,7 @@ function deployRequirements(options, service = "") {
     title: "Linux Automation",
     task: () => {
       return new Listr(LinuxReqs, { concurrent: false });
-    }
+    },
   };
 
   return [requirementsLinux, count_checks];
@@ -68,15 +68,17 @@ function deployRequirements(options, service = "") {
 
 exports.deployRequirements = deployRequirements;
 
-async function configInit(options, platform, service = null, callback) {
+async function configInit(options, service = null, callback) {
   const status = new Spinner(
-    `Initializing ${platform.toUpperCase()} Activity...`
+    `Initializing ${options.deployPlatform.toUpperCase()} Activity...`
   );
   status.start();
   status.stop();
 
   if (service == "vm") {
-    let ansiblePingCommand = `ansible all -m ping -i ${options.ansibleInventoryPath}`;
+    let ansiblePingCommand = `cd ${options.targetDirectory} && ansible all -m ping -i ansible_inventory.yaml`; // ${options.ansibleInventoryPath}
+    console.log(process.cwd());
+    console.log(ansiblePingCommand);
     await utilities.cliSpawnCommand(
       options,
       ansiblePingCommand,
@@ -84,12 +86,12 @@ async function configInit(options, platform, service = null, callback) {
       {
         message: `Connection to ${options.machineHost} Successful`,
         catch: true,
-        catchStrings: ["pong"]
+        catchStrings: ["pong"],
       },
       {
         message: `Connection to ${options.machineHost} Failed`,
         catch: true,
-        catchStrings: ["error"]
+        catchStrings: ["error"],
       },
       callback
     );

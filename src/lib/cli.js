@@ -1,4 +1,5 @@
 const arg = require("arg");
+const fs = require("fs");
 const inquirer = require("inquirer");
 const path = require("path");
 const params = require(path.join(__dirname, "./params.js"));
@@ -90,7 +91,8 @@ async function cli(args) {
         "--email": String,
         "--domain": String,
         "--dns": String,
-        "--dns_resolver": String
+        "--dns_resolver": String,
+        "--with-ip": String,
       };
 
       //add additional baseArgs from infrastructure, platform or framework requirements
@@ -98,7 +100,7 @@ async function cli(args) {
         ...baseArgs,
         ...frameworkRequirements.getArgs(),
         ...platformRequirements.getArgs(),
-        ...infrastructureRequirements.getArgs()
+        ...infrastructureRequirements.getArgs(),
       };
 
       const args = arg(finalArgs, { argv: rawArgs.slice(2) });
@@ -136,7 +138,8 @@ async function cli(args) {
         argFeatures: args["--features"] || "all",
         argDomain: args["--domain"],
         argDNS: args["--dns"] || "localhost",
-        argDNSResolver: args["--dns_resolver"] || "valet"
+        argDNSResolver: args["--dns_resolver"] || "valet",
+        withIP: args["--with-ip"] || "0.0.0.0",
       };
 
       //add additional baseOptions from infrastructure, platform or framework requirements
@@ -144,7 +147,7 @@ async function cli(args) {
         ...baseOptions,
         ...frameworkRequirements.getOptions(args),
         ...platformRequirements.getOptions(args),
-        ...infrastructureRequirements.getOptions(args)
+        ...infrastructureRequirements.getOptions(args),
       };
     } catch (err) {
       console.error(
@@ -161,7 +164,26 @@ async function cli(args) {
 
   async function assertGlobalConfig(options, action_type) {
     let homeDir = await utilities.homeDirectory();
-    let globalConfigPath = path.join(homeDir, `.modullo`);
+    //let globalConfigPath = path.join(homeDir, `.modullo`);
+    let globalConfigFolder = path.join(homeDir, `.modullo/`);
+
+    if (!fs.existsSync(globalConfigFolder)) {
+      fs.mkdirSync(
+        `${globalConfigFolder}private_keys`,
+        { recursive: true },
+        (err) => {
+          if (err) {
+            console.log(
+              `%s Unable to create Modullo Configuration Folder \n`,
+              chalk.blueBright.bold("CLI: ")
+            );
+            process.exit(1);
+          }
+        }
+      );
+    }
+
+    let globalConfigPath = path.join(homeDir, `${globalConfigFolder}.modullo`);
 
     let globalConfigExists = await utilities.file_exists(globalConfigPath);
 
@@ -179,7 +201,7 @@ async function cli(args) {
             options,
             "yaml",
             globalConfigPath,
-            async function(readResult, readFile) {
+            async function (readResult, readFile) {
               if (readResult) {
                 console.log(
                   `%s Modullo GLOBAL Configuration READ.`,
@@ -200,6 +222,11 @@ async function cli(args) {
                   : globalConfig.bio.lastname;
               }
             }
+          );
+        } else {
+          console.log(
+            `%s GLOBAL Configuration NOT FOUND`,
+            chalk.blueBright.bold("CLI:")
           );
         }
 
@@ -224,15 +251,15 @@ async function cli(args) {
                 : "",
               lastname: Str(options.argLastname).isNotEmpty()
                 ? options.argLastname
-                : ""
-            }
+                : "",
+            },
           };
 
           await utilities.writeYAML(
             options,
             globalConfigYAML,
             globalConfigPath,
-            async function(result) {
+            async function (result) {
               if (result) {
                 console.log(
                   `%s Modullo Global configuration successfully written \n`,
@@ -243,6 +270,8 @@ async function cli(args) {
               }
             }
           );
+        } else {
+          //console.log("11)");
         }
 
         break;
@@ -269,7 +298,7 @@ async function cli(args) {
         options,
         "yaml",
         modulloConfigPath,
-        async function(readResult, readFile) {
+        async function (readResult, readFile) {
           if (readResult) {
             console.log(
               `%s Modullo APP Configuration READ.`,
@@ -316,24 +345,24 @@ async function cli(args) {
       let modulloConfigYAML = {
         version: 1,
         base: {
-          framework: options.installFramework || "modullo",
+          framework: options.installFramework || "base",
           platform: options.deployPlatform || "local",
-          infrastructure: options.createInfrastructure || "vm"
+          infrastructure: options.createInfrastructure || "vm",
         },
         parameters: {
           framework: {
-            app: "ModulloApp"
-          }
+            app: "ModulloApp",
+          },
         },
         "multi-app": false,
-        "multi-container": false
+        "multi-container": false,
       };
 
       await utilities.writeYAML(
         options,
         modulloConfigYAML,
         modulloConfigPath,
-        async function(result) {
+        async function (result) {
           if (result) {
             console.log(
               `%s Modullo Configuration successfully written \n`,
@@ -512,14 +541,14 @@ async function cli(args) {
       case "load":
         return {
           ...options,
-          module: args["load"] || "no-module"
+          module: args["load"] || "no-module",
         };
         break;
 
       default:
         return {
           ...options,
-          template: options.template || defaultTemplate
+          template: options.template || defaultTemplate,
         };
     }
 
@@ -530,7 +559,7 @@ async function cli(args) {
         "%s The following argument(s) is/are required but either missing OR in the wrong format: ",
         chalk.red.bold("Error")
       );
-      Object.keys(options.missingArguments).forEach(element => {
+      Object.keys(options.missingArguments).forEach((element) => {
         console.log(
           `- ${chalk.red.bold(element)}: ${chalk.italic(
             options.missingArguments[element]

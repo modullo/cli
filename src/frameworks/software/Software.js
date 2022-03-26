@@ -61,6 +61,7 @@ async function createInit(options, platform, service = "") {
 
   if (platform == "linux" && service == "vm") {
     try {
+      // All th ebelow should propably be centralized on Linux to aid re-use. Only the linux.configiInit shouldd be called here
       console.log(
         `%s Generating Ansible Inventory...`,
         chalk.green.bold("Provisioner: ")
@@ -76,36 +77,41 @@ async function createInit(options, platform, service = "") {
       let yamlConfig = {
         modullo_vm: {
           hosts: {
-            [machineHost]: ""
+            [machineHost]: "",
           },
           vars: {
             ansible_ssh_user: machineUser,
-            ansible_ssh_private_key_file: machineKeyPath
-          }
-        }
+            ansible_ssh_private_key_file: machineKeyPath,
+          },
+        },
       };
 
-      await utilities.writeYAML(options, yamlConfig, yamlPath, async function(
-        result
-      ) {
-        if (result) {
-          //process.exit(1);
-          console.log(
-            `%s Checking connection to Linux`,
-            chalk.green.bold("Provisioner: ")
-          );
-          //configure Linux environment
-          await linux.configInit(options, platform, service, async function(
-            initResult
-          ) {
-            if (initResult) {
-              //console.log(`%s Connection to Machine Succeded`, chalk.green.bold("Provisioner: ") );
-            }
-          });
-        } else {
-          //
+      await utilities.writeYAML(
+        options,
+        yamlConfig,
+        yamlPath,
+        async function (result) {
+          if (result) {
+            //process.exit(1);
+            console.log(
+              `%s Checking connection to Linux`,
+              chalk.green.bold("Provisioner: ")
+            );
+            //configure Linux environment
+            await linux.configInit(
+              options,
+              service,
+              async function (initResult) {
+                if (initResult) {
+                  //console.log(`%s Connection to Machine Succeded`, chalk.green.bold("Provisioner: ") );
+                }
+              }
+            );
+          } else {
+            //
+          }
         }
-      });
+      );
     } catch (err) {
       console.log("%s Configure error: " + err, chalk.red.bold("Error: "));
       await status.stop();
@@ -115,27 +121,32 @@ async function createInit(options, platform, service = "") {
 
 exports.createInit = createInit;
 
-async function createPipeline(options, platform, service = "") {
+async function provisionSoftware(options, software_slug) {
   const status = new Spinner(
-    `Creating Pipeline for Wordpress Application on ${platform.toUpperCase()}...`
+    `Provisioning ${software_slug} to ${
+      options.machineHost
+    } on ${options.deployPlatform.toUpperCase()}...`
   );
   await status.start();
-  if (options.deployPlatform == "aws" && platform == "cdk") {
-    await aws.configInit(options, platform, service); //configure AWS CDK environment
-  }
 
-  if (platform == "cdk") {
-    let createCDKAppCommannds = `cd ${options.targetDirectory}`;
-    createCDKAppCommannds += ` `;
+  //ensure role is installed (using ansible-galaxy)
 
-    await utilities.cliSpawn(
-      options,
-      createCDKAppCommannds,
-      "AWS CDK",
-      "CDK App Creation Successful",
-      "CDK App Creation Error"
-    );
-  }
+  await ansible.checkGalaxyRole(
+    options,
+    software_slug,
+    async function (galaxyResult, galaxyData) {
+      if (galaxyResult) {
+        console.log(galaxyData);
+
+        let ansibleRole = galaxyData["role"];
+        let ansibleRolePath = galaxyData["path"];
+
+        //make ansible playbook
+
+        //go ahead and provision
+      }
+    }
+  );
 }
 
-exports.createPipeline = createPipeline;
+exports.provisionSoftware = provisionSoftware;

@@ -37,6 +37,13 @@ async function packageRootFolder(options = null) {
 }
 exports.packageRootFolder = packageRootFolder;
 
+async function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+exports.sleep = sleep;
+
 async function file_exists(path) {
   try {
     await access(path, fs.constants.R_OK);
@@ -65,7 +72,7 @@ async function installTemplateFiles(options) {
     );
   }
   await copy(options.templateDirectory, `${options.targetDirectory}`, {
-    clobber: false
+    clobber: false,
   });
 }
 
@@ -156,10 +163,10 @@ async function setupInstallationENV(options) {
       params.docker.services.smtp.port + options.port_increment,
     SERVICE_SMTP_PORT_2:
       params.docker.services.smtp.port_2 + options.port_increment,
-    SERVICE_SMTP_IMAGE: params.docker.services.smtp.image
+    SERVICE_SMTP_IMAGE: params.docker.services.smtp.image,
   };
 
-  await fs.writeFile(sourcePath, envfile.stringify(data), err => {
+  await fs.writeFile(sourcePath, envfile.stringify(data), (err) => {
     if (err) {
       console.log(chalk.red.bold(`${err}`));
       //status.stop;
@@ -196,9 +203,9 @@ async function downloadFiles(options, app) {
 
   let repoArray = params.versions[git_template];
 
-  repoDownloadLink = `https://github.com/${repoArray[`git_repo_${app}`] +
-    "/tarball/" +
-    repoArray[`git_branch_${app}`]}`;
+  repoDownloadLink = `https://github.com/${
+    repoArray[`git_repo_${app}`] + "/tarball/" + repoArray[`git_branch_${app}`]
+  }`;
 
   if (repoDownloadLink.length == 0) {
     console.log("%s Invalid repository URL", chalk.red.bold("Error"));
@@ -220,10 +227,10 @@ async function downloadFiles(options, app) {
       `-LJ`,
       repoDownloadLink,
       `-o`,
-      `${destinationPath}`
+      `${destinationPath}`,
     ]);
 
-    ls.on("close", async code => {
+    ls.on("close", async (code) => {
       if (code === 0) {
         console.log("%s Download Complete", chalk.green.bold("Success"));
         status.stop();
@@ -274,10 +281,10 @@ async function extractFiles(
       `-zxf`,
       `${extractDir}` + `${extractFile}`,
       `-C`,
-      extractDestinationPath
+      extractDestinationPath,
     ]);
 
-    ls2.on("close", async code => {
+    ls2.on("close", async (code) => {
       if (code === 0) {
         console.log("%s Extract Complete", chalk.green.bold("Success"));
         status.stop();
@@ -346,10 +353,10 @@ async function copyFiles(options, app, sourceFolder, destinationFolder) {
     let ls3 = await spawn("cp", [
       `-a`,
       `${sourceFolder}` + `${sourceFile}/.`,
-      `${destinationFolder}`
+      `${destinationFolder}`,
     ]);
 
-    ls3.on("close", async code => {
+    ls3.on("close", async (code) => {
       if (code === 0) {
         console.log("%s Copy Complete", chalk.green.bold("Success"));
         status.stop();
@@ -389,7 +396,7 @@ async function cleanupFiles(options, app, cleanupFolder, destinationFolder) {
   try {
     let ls = await spawn("rm", [`-rf`, `${cleanupFolder}`]);
 
-    ls.on("close", async code => {
+    ls.on("close", async (code) => {
       if (code === 0) {
         console.log("%s Cleanup Complete", chalk.green.bold("Success"));
         status.stop();
@@ -559,7 +566,7 @@ async function setupCoreENV(options) {
     REDIS_CLIENT: "predis",
     MAIL_DRIVER: mail_driver,
     MAIL_HOST: mail_host,
-    MAIL_PORT: mail_port
+    MAIL_PORT: mail_port,
   };
 
   if (options.template.toLowerCase() == "deploy") {
@@ -582,24 +589,22 @@ async function setupCoreENV(options) {
         } // skip this property
         herokuConfigs += `${key}=${data[key]} `;
       }
-      herokuConfigs = Str(herokuConfigs)
-        .rtrim()
-        .get();
+      herokuConfigs = Str(herokuConfigs).rtrim().get();
 
       options = {
         ...options,
         deployENVCore: sourcePath,
-        herokuConfigsCore: herokuConfigs
+        herokuConfigsCore: herokuConfigs,
       };
 
       return {
         env: data,
-        options: options
+        options: options,
       };
     }
   }
 
-  await fs.writeFile(sourcePath, envfile.stringify(data), err => {
+  await fs.writeFile(sourcePath, envfile.stringify(data), (err) => {
     if (err) {
       console.log(chalk.red.bold(`${err}`));
       console.log("error");
@@ -771,7 +776,7 @@ async function setupHubENV(options) {
     DORCAS_CLIENT_ID: options.clientId,
     DORCAS_CLIENT_SECRET: options.clientSecret,
     DORCAS_PERSONAL_CLIENT_ID: options.clientId,
-    DORCAS_PERSONAL_CLIENT_SECRET: options.clientSecret
+    DORCAS_PERSONAL_CLIENT_SECRET: options.clientSecret,
   };
 
   if (options.template.toLowerCase() == "deploy") {
@@ -794,24 +799,22 @@ async function setupHubENV(options) {
         } // skip this property
         herokuConfigs += `${key}=${data[key]} `;
       }
-      herokuConfigs = Str(herokuConfigs)
-        .rtrim()
-        .get();
+      herokuConfigs = Str(herokuConfigs).rtrim().get();
 
       options = {
         ...options,
         deployENVHub: sourcePath,
-        herokuConfigsHub: herokuConfigs
+        herokuConfigsHub: herokuConfigs,
       };
 
       return {
         env: data,
-        options: options
+        options: options,
       };
     }
   }
 
-  fs.writeFile(sourcePath, envfile.stringify(data), err => {
+  fs.writeFile(sourcePath, envfile.stringify(data), (err) => {
     if (err) {
       console.log(chalk.red.bold(`${err}`));
       process.exit(1);
@@ -828,7 +831,7 @@ exports.setupHubENV = setupHubENV;
 
 async function writeYAML(options, data, output_path, callback) {
   let yamlStr = yaml.dump(data);
-  await fs.writeFile(output_path, yamlStr, "utf8", err => {
+  await fs.writeFile(output_path, yamlStr, "utf8", (err) => {
     if (err) {
       console.log(`%s Error writing YAML: ${err}`, chalk.red.bold("CLI Error"));
       callback(false);
@@ -859,7 +862,7 @@ async function readFile(options, file_type, file_path, callback) {
 exports.readFile = readFile;
 
 async function writeFile(options, data, output_path, callback) {
-  await fs.writeFile(output_path, data, "utf8", err => {
+  await fs.writeFile(output_path, data, "utf8", (err) => {
     if (err) {
       console.log(`%s Error writing File: ${err}`, chalk.red.bold("CLI Error"));
       callback(false);
@@ -898,7 +901,7 @@ async function checkDatabaseConnectionCORE(options, callback) {
     database: db_database_core,
     user: db_username,
     password: db_password,
-    port: db_port
+    port: db_port,
   };
 
   const connection = mysql.createConnection(connection_string);
@@ -910,7 +913,7 @@ async function checkDatabaseConnectionCORE(options, callback) {
 
   const status = new Spinner("Connecting to Database...");
   status.start();
-  connection.connect(async function(err) {
+  connection.connect(async function (err) {
     if (err) {
       callback(false);
       console.log("%s Database Connection Failed", chalk.red.bold("error"));
@@ -957,7 +960,7 @@ async function checkOAuthTablesCORE(options, callback) {
     database: db_database_core,
     user: db_username,
     password: db_password,
-    port: db_port
+    port: db_port,
   };
 
   const connection = mysql.createConnection(connection_string);
@@ -969,23 +972,25 @@ async function checkOAuthTablesCORE(options, callback) {
 
   const status = new Spinner("Connecting to Database...");
   status.start();
-  connection.query("SELECT * FROM oauth_clients", async function(
-    err,
-    result,
-    fields
-  ) {
-    if (err) {
-      console.log("%s Still Initializing Tables", chalk.red.bold("error"));
-      await status.stop();
-      connection.end();
-      callback(false);
-    } else {
-      console.log("%s OAuth Connection Instantiated", chalk.green.bold("CLI:"));
-      await status.stop();
-      connection.end();
-      callback(true);
+  connection.query(
+    "SELECT * FROM oauth_clients",
+    async function (err, result, fields) {
+      if (err) {
+        console.log("%s Still Initializing Tables", chalk.red.bold("error"));
+        await status.stop();
+        connection.end();
+        callback(false);
+      } else {
+        console.log(
+          "%s OAuth Connection Instantiated",
+          chalk.green.bold("CLI:")
+        );
+        await status.stop();
+        connection.end();
+        callback(true);
+      }
     }
-  });
+  );
 }
 exports.checkOAuthTablesCORE = checkOAuthTablesCORE;
 
@@ -1035,7 +1040,7 @@ async function setupDorcasCoreOAuth(options) {
     console.log(setup_url);
   }
 
-  let res = await axios.post(setup_url).catch(err => {
+  let res = await axios.post(setup_url).catch((err) => {
     console.log("Error setting up CORE OAuth: " + chalk.red.bold(`${err}`));
     process.exit(1);
   });
@@ -1100,7 +1105,7 @@ async function setupAdminAccount(options, callback) {
           phone: options.answers.phone,
           feature_select: options.answers.feature_select,
           client_id: options.clientId,
-          client_secret: options.clientSecret
+          client_secret: options.clientSecret,
         };
       } else if (options.template.toLowerCase() == "deploy") {
         installationPass = Str.random(12);
@@ -1115,7 +1120,7 @@ async function setupAdminAccount(options, callback) {
           phone: options.deployCompany || "08123456789",
           feature_select: "all",
           client_id: options.clientId,
-          client_secret: options.clientSecret
+          client_secret: options.clientSecret,
         };
       }
       let res = await createUser(data, options);
@@ -1229,7 +1234,7 @@ async function createUser(body, options) {
     console.log(body);
   }
 
-  let res = await axios.post(create_url, body).catch(err => {
+  let res = await axios.post(create_url, body).catch((err) => {
     console.log(chalk.red.bold(`User Creation Error: ${err}`));
     process.exit();
   });
@@ -1255,7 +1260,7 @@ async function cliSpawn(
 
     let ls = await spawn(spawnCommand, { shell: true });
 
-    ls.stdout.on("data", async data => {
+    ls.stdout.on("data", async (data) => {
       console.log(`%s ${data}`, chalk.magenta.bold("Output: "));
       if (data.includes("level=error") || data.includes("level=fatal")) {
         console.log(
@@ -1266,16 +1271,16 @@ async function cliSpawn(
       }
     });
 
-    ls.stderr.on("data", async data => {
+    ls.stderr.on("data", async (data) => {
       console.log(`%s ${data}`, chalk.magenta.bold("Input: "));
       process.stdin.pipe(ls.stdin);
     });
-    ls.on("close", async code => {
+    ls.on("close", async (code) => {
       if (code === 0) {
         console.log(`%s ${messageSuccess}`, chalk.green.bold(`${callerID}: `));
       }
     });
-    ls.on("error", async error => {
+    ls.on("error", async (error) => {
       console.log(`%s ${error.message}`, chalk.green.bold("Error: "));
     });
   } catch (err) {
@@ -1309,7 +1314,7 @@ async function cliSpawnCallback(
 
     let ls = await spawn(spawnCommand, { shell: true });
 
-    ls.stdout.on("data", async data => {
+    ls.stdout.on("data", async (data) => {
       console.log(`%s ${data}`, chalk.magenta.bold("Output: "));
       if (data.includes("level=error") || data.includes("level=fatal")) {
         console.log(
@@ -1325,7 +1330,7 @@ async function cliSpawnCallback(
       }
     });
 
-    ls.stderr.on("data", async data => {
+    ls.stderr.on("data", async (data) => {
       console.log(`%s ${data}`, chalk.magenta.bold("Input: "));
       process.stdin.pipe(ls.stdin);
       if (returnOutput && data.includes(returnOnString)) {
@@ -1333,13 +1338,13 @@ async function cliSpawnCallback(
         callback(true, callbackData);
       }
     });
-    ls.on("close", async code => {
+    ls.on("close", async (code) => {
       if (code === 0) {
         console.log(`%s ${messageSuccess}`, chalk.green.bold(`${callerID}: `));
         callback(true, callbackData);
       }
     });
-    ls.on("error", async error => {
+    ls.on("error", async (error) => {
       console.log(`%s ${error.message}`, chalk.green.bold("Error: "));
     });
   } catch (err) {
@@ -1373,7 +1378,7 @@ async function cliSpawnCommand(
 
     let ls = await spawn(spawnCommand, { shell: true });
 
-    ls.stdout.on("data", async data => {
+    ls.stdout.on("data", async (data) => {
       console.log(`%s ${data}`, chalk.magenta.bold("Output: "));
 
       for (var i = 0; i < successRequest.catchStrings.length; i++) {
@@ -1397,7 +1402,7 @@ async function cliSpawnCommand(
       }
     });
 
-    ls.stderr.on("data", async data => {
+    ls.stderr.on("data", async (data) => {
       console.log(`%s ${data}`, chalk.magenta.bold("Input: "));
       process.stdin.pipe(ls.stdin);
 
@@ -1428,7 +1433,7 @@ async function cliSpawnCommand(
         }
       }
     });
-    ls.on("close", async code => {
+    ls.on("close", async (code) => {
       if (code === 0) {
         console.log(
           `%s ${successRequest.message}`,
@@ -1439,7 +1444,7 @@ async function cliSpawnCommand(
         }
       }
     });
-    ls.on("error", async error => {
+    ls.on("error", async (error) => {
       console.log(`%s ${error.message}`, chalk.green.bold("Error: "));
     });
   } catch (err) {
@@ -1472,7 +1477,7 @@ async function installContainerServices(options) {
       );
     }
 
-    ls.on("close", async code => {
+    ls.on("close", async (code) => {
       status.stop();
 
       if (code === 0) {
@@ -1506,30 +1511,32 @@ async function installContainersForCore(options, params) {
     if (options.template.toLowerCase() == "production") {
       dockerComposeArgs = [
         `--env-file`,
-        `${options.targetDirectory +
-          `/.env.` +
-          options.template.toLowerCase()}`,
+        `${
+          options.targetDirectory + `/.env.` + options.template.toLowerCase()
+        }`,
         `-f`,
         `${options.targetDirectory + `/docker-compose.yml`}`,
         `up`,
         `-d`,
         `--build`,
         `${params.docker.services.proxy.name + options.container_name_addon}`,
-        `${params.docker.services.core_php.name +
-          options.container_name_addon}`,
-        `${params.docker.services.core_web.name +
-          options.container_name_addon}`,
+        `${
+          params.docker.services.core_php.name + options.container_name_addon
+        }`,
+        `${
+          params.docker.services.core_web.name + options.container_name_addon
+        }`,
         `${params.docker.services.mysql.name + options.container_name_addon}`,
         `${params.docker.services.redis.name + options.container_name_addon}`,
-        `${params.docker.services.smtp.name + options.container_name_addon}`
+        `${params.docker.services.smtp.name + options.container_name_addon}`,
       ];
     } else if (options.template.toLowerCase() == "development") {
       //`--build` - necessary  for dev hot reloading?
       dockerComposeArgs = [
         `--env-file`,
-        `${options.targetDirectory +
-          `/.env.` +
-          options.template.toLowerCase()}`,
+        `${
+          options.targetDirectory + `/.env.` + options.template.toLowerCase()
+        }`,
         `-f`,
         `${options.targetDirectory + `/docker-compose.yml`}`,
         `-f`,
@@ -1538,16 +1545,20 @@ async function installContainersForCore(options, params) {
         `-d`,
         `--build`,
         `${params.docker.services.proxy.name + options.container_name_addon}`,
-        `${params.docker.services.core_php.name +
-          options.container_name_addon}`,
-        `${params.docker.services.core_web.name +
-          options.container_name_addon}`,
+        `${
+          params.docker.services.core_php.name + options.container_name_addon
+        }`,
+        `${
+          params.docker.services.core_web.name + options.container_name_addon
+        }`,
         `${params.docker.services.mysql.name + options.container_name_addon}`,
         `${params.docker.services.redis.name + options.container_name_addon}`,
         `${params.docker.services.smtp.name + options.container_name_addon}`,
-        `${params.docker.services.reloader.name +
+        `${
+          params.docker.services.reloader.name +
           options.container_name_addon +
-          `_core`}`
+          `_core`
+        }`,
       ];
     }
 
@@ -1558,7 +1569,7 @@ async function installContainersForCore(options, params) {
 
     const ls = spawn("docker-compose", dockerComposeArgs);
 
-    ls.on("close", async code => {
+    ls.on("close", async (code) => {
       await status.stop();
       if (code === 0) {
         console.log(
@@ -1592,16 +1603,16 @@ async function initializeContainersForHub(options) {
     [
       {
         title: "Dorcas HUB Installation",
-        task: () => installContainersForHub(options)
-      }
+        task: () => installContainersForHub(options),
+      },
     ],
     { exitOnError: false }
   );
 
   try {
-    await checkDatabaseConnectionCORE(options, async function(result) {
+    await checkDatabaseConnectionCORE(options, async function (result) {
       if (result) {
-        await checkOAuthTablesCORE(options, async function(result) {
+        await checkOAuthTablesCORE(options, async function (result) {
           if (result) {
             setTimeout(async () => {
               let res = await setupDorcasCoreOAuth(options);
@@ -1653,23 +1664,23 @@ async function installContainersForHub(options) {
     if (options.template.toLowerCase() == "production") {
       dockerComposeArgs = [
         `--env-file`,
-        `${options.targetDirectory +
-          `/.env.` +
-          options.template.toLowerCase()}`,
+        `${
+          options.targetDirectory + `/.env.` + options.template.toLowerCase()
+        }`,
         `-f`,
         `${options.targetDirectory + `/docker-compose.yml`}`,
         `up`,
         `-d`,
         `--build`,
         `${params.docker.services.hub_php.name + options.container_name_addon}`,
-        `${params.docker.services.hub_web.name + options.container_name_addon}`
+        `${params.docker.services.hub_web.name + options.container_name_addon}`,
       ];
     } else if (options.template.toLowerCase() == "development") {
       dockerComposeArgs = [
         `--env-file`,
-        `${options.targetDirectory +
-          `/.env.` +
-          options.template.toLowerCase()}`,
+        `${
+          options.targetDirectory + `/.env.` + options.template.toLowerCase()
+        }`,
         `-f`,
         `${options.targetDirectory + `/docker-compose.yml`}`,
         `-f`,
@@ -1679,9 +1690,11 @@ async function installContainersForHub(options) {
         `--build`,
         `${params.docker.services.hub_php.name + options.container_name_addon}`,
         `${params.docker.services.hub_web.name + options.container_name_addon}`,
-        `${params.docker.services.reloader.name +
+        `${
+          params.docker.services.reloader.name +
           options.container_name_addon +
-          `_hub`}`
+          `_hub`
+        }`,
       ];
     }
     if (options.debugMode == "yes") {
@@ -1690,7 +1703,7 @@ async function installContainersForHub(options) {
     }
 
     const ls = spawn("docker-compose", dockerComposeArgs);
-    ls.on("close", async code => {
+    ls.on("close", async (code) => {
       await status.stop();
       if (code === 0) {
         console.log(
@@ -1719,7 +1732,7 @@ async function checkDatabaseConnectionCORE(options, callback) {
     user: params.docker.services.mysql.user,
     password: options.databasePassword,
     port: params.docker.services.mysql.port + options.port_increment,
-    database: params.docker.services.mysql.db_core
+    database: params.docker.services.mysql.db_core,
   };
 
   const connection = mysql.createConnection(connection_string);
@@ -1731,7 +1744,7 @@ async function checkDatabaseConnectionCORE(options, callback) {
 
   const status = new Spinner("Connecting to Database...");
   status.start();
-  connection.connect(async function(err) {
+  connection.connect(async function (err) {
     if (err) {
       callback(false);
       console.log("%s Database Connection Failed", chalk.red.bold("error"));
@@ -1755,7 +1768,7 @@ async function checkOAuthTablesCORE(options, callback) {
     user: params.docker.services.mysql.user,
     password: options.databasePassword,
     port: params.docker.services.mysql.port + options.port_increment,
-    database: params.docker.services.mysql.db_core
+    database: params.docker.services.mysql.db_core,
   };
   const connection = mysql.createConnection(connection_string);
 
@@ -1766,26 +1779,25 @@ async function checkOAuthTablesCORE(options, callback) {
 
   const status = new Spinner("Connecting to Database...");
   status.start();
-  connection.query("SELECT * FROM oauth_clients", async function(
-    err,
-    result,
-    fields
-  ) {
-    if (err) {
-      console.log("%s Still Initializing Tables", chalk.red.bold("error"));
-      await status.stop();
-      connection.end();
-      callback(false);
-    } else {
-      console.log(
-        "%s OAuth Connection Instantiated",
-        chalk.green.bold("success")
-      );
-      await status.stop();
-      connection.end();
-      callback(true);
+  connection.query(
+    "SELECT * FROM oauth_clients",
+    async function (err, result, fields) {
+      if (err) {
+        console.log("%s Still Initializing Tables", chalk.red.bold("error"));
+        await status.stop();
+        connection.end();
+        callback(false);
+      } else {
+        console.log(
+          "%s OAuth Connection Instantiated",
+          chalk.green.bold("success")
+        );
+        await status.stop();
+        connection.end();
+        callback(true);
+      }
     }
-  });
+  );
 }
 
 async function setupDorcasCoreOAuth(options) {
@@ -1803,7 +1815,7 @@ async function setupDorcasCoreOAuth(options) {
     console.log(setup_url);
   }
 
-  let res = await axios.post(setup_url).catch(err => {
+  let res = await axios.post(setup_url).catch((err) => {
     console.log("Error setting up CORE OAuth: " + chalk.red.bold(`${err}`));
     process.exit(1);
   });
@@ -1813,10 +1825,10 @@ async function setupDorcasCoreOAuth(options) {
 function isValidURL(str) {
   var pattern = new RegExp(
     "^(https?:\\/\\/)?" + // protocol
-    "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
-    "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
-    "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
-    "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
+      "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
+      "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
+      "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
+      "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
       "(\\#[-a-z\\d_]*)?$",
     "i"
   ); // fragment locator
@@ -1838,7 +1850,7 @@ function choosePort(fromPort = 60000, toPort = 65000) {
 exports.choosePort = choosePort;
 
 async function writeENV(options, owner_id, data, output_path, callback) {
-  fs.writeFile(output_path, envfile.stringify(data), err => {
+  fs.writeFile(output_path, envfile.stringify(data), (err) => {
     if (err) {
       console.log(`%s Error writing ENV: ${err}`, chalk.red.bold("CLI Error"));
       callback(false);
@@ -1855,7 +1867,7 @@ async function writeENV(options, owner_id, data, output_path, callback) {
 exports.writeENV = writeENV;
 
 async function writeINI(options, owner_id, data, output_path, callback) {
-  fs.writeFile(output_path, ini.stringify(data), err => {
+  fs.writeFile(output_path, ini.stringify(data), (err) => {
     if (err) {
       console.log(`%s Error writing INI: ${err}`, chalk.red.bold("CLI Error"));
       callback(false);

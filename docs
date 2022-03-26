@@ -1,0 +1,8 @@
+// Creating New Functionality (Infrastructure)
+
+- Create component folder and files. Folder is inside the src/infrastructure/componennt-name. 2 files one component-name.js and inquirer.js 
+- Edit component files
+- Update infrastructureRequirement.js with requirements / command line arguments
+- Update action.js with new compoent and specify initialization command afer including component files
+- Update interactive paramerters requirements in component file (inquirer.js)
+- Update cli paramerters requirements in component file (e.g. vm.js)

@@ -6,12 +6,24 @@ exports.inquiries_pipeline = [
     name: "vm-os",
     type: "input",
     message: "Please specify a VM Operating System",
-    validate: function(value) {
+    validate: function (value) {
       if (value.length) {
         return true;
       } else {
         return "Required! Please specify a VM Operating System";
       }
-    }
-  }
+    },
+  },
+  {
+    name: "vm-name",
+    type: "input",
+    message: "Please specify a Name for your VM",
+    validate: function (value) {
+      if (value.length) {
+        return true;
+      } else {
+        return "Required! Please specify a Name for your VM";
+      }
+    },
+  },
 ];
